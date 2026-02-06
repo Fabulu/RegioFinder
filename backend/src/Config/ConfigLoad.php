@@ -1,6 +1,6 @@
 <?php
 
-namespace Regiomap\Config;
+namespace RegioMap\Config;
 
 class ConfigLoad
 {
@@ -16,7 +16,7 @@ class ConfigLoad
         $filename = __DIR__ . "/../../config.ini";
 
         $ini_array = parse_ini_file($filename);
-        print_r($ini_array);
+        //print_r($ini_array);
 
         //$ini_array["dbname"] = $dbname;
 

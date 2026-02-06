@@ -1,8 +1,8 @@
 <?php
 
-namespace Regiomap\Api;
+namespace RegioMap\Api;
 
-use Regiomap\Config\ConfigLoad;
+use RegioMap\Config\ConfigLoad;
 
 class ApiResponse
 {
@@ -11,6 +11,8 @@ class ApiResponse
     public function render()
     {
 
+
+        (new ConfigLoad());
 
         header("Content-Type: application/json");
 

@@ -9,12 +9,12 @@ class ComposerStaticInit05155fef3e288d60920a81038c943f0e
     public static $prefixLengthsPsr4 = array (
         'R' => 
         array (
-            'Regiomap\\Regiomap\\' => 18,
+            'RegioMap\\' => 9,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'Regiomap\\Regiomap\\' => 
+        'RegioMap\\' => 
         array (
             0 => __DIR__ . '/../..' . '/src',
         ),

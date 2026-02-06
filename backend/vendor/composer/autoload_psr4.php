@@ -6,5 +6,5 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
-    'Regiomap\\Regiomap\\' => array($baseDir . '/src'),
+    'RegioMap\\' => array($baseDir . '/src'),
 );

@@ -5,4 +5,6 @@ ini_set('display_errors', '1');
 
 require __DIR__ . "/../vendor/autoload.php";
 
-(new \Regiomap\Api\ApiResponse())->render();
+(new \RegioMap\Api\ApiResponse())->render();
+
+//(new \Regiomap\Api\ApiResponse())->render();
