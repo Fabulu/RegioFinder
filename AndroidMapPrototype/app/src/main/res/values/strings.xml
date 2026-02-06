@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">RegioFinder</string>
+    <string name="maplibre_key">unused</string>
+</resources>
