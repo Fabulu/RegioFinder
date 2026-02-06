@@ -87,7 +87,7 @@ class ApiResponse
                 //print_r($_POST);
                 //print_r($_GET);
 
-                $name = $input['poi'];
+                $name = $input['betrieb'];
 
 
 
