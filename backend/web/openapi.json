@@ -6,7 +6,7 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/poi": {
+    "/api.php": {
       "get": {
         "summary": "Listet alle Hofläden",
         "description": "Gibt eine Liste von Points of Interest zurück. Optional filterbar nach Text, Kategorie oder Bounding Box.",
