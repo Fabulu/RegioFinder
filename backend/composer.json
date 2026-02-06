@@ -1,0 +1,16 @@
+{
+    "name": "regiomap/regiomap",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Regiomap\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "urs-lang",
+            "email": "urs.lang@nemundo.ch"
+        }
+    ],
+    "require": {}
+}
