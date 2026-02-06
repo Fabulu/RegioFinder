@@ -1,5 +1,39 @@
-# Vue 3 + Vite
+# Jurapark Verkäufer-Portal – Frontend (Windows + PowerShell)
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+Voraussetzung: Internetzugang. Kein Backend nötig.
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+INSTALL NODE.JS (einmalig)
+- Öffne https://nodejs.org
+- Lade "LTS" herunter und installiere (Default-Optionen, "Add to PATH" aktiv lassen)
+- PowerShell schließen und neu öffnen
+- Prüfen:
+  node -v
+  npm -v
+
+PROJEKT STARTEN
+- In dein Repo wechseln:
+  cd C:\pfad\zu\deinem\repo
+- In den Frontend-Ordner (wo package.json liegt):
+  cd frontend
+- Dependencies installieren (einmalig pro frischem Checkout):
+  npm install
+- Dev-Server starten:
+  npm run dev
+- Browser öffnen:
+  http://localhost:5173
+
+STOPPEN
+- Im PowerShell-Fenster:
+  CTRL + C
+
+TROUBLESHOOTING
+- "node" nicht gefunden:
+  PowerShell neu öffnen; falls nötig Node LTS neu installieren
+- Port belegt:
+  npm run dev -- --port 5174
+  dann öffnen: http://localhost:5174
+
+KURZVERSION
+cd frontend
+npm install
+npm run dev
