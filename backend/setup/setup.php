@@ -1,15 +1,25 @@
 <?php
 
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+
+require __DIR__ . "/../vendor/autoload.php";
+
+(new \RegioMap\Config\ConfigLoad());
+
+
+
+/*
 
 $host = "localhost";
 $dbname = "local_map";
 $user = "root";
 $pass = "123456";
-
+*/
 try {
-    $pdo = new \PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $pass);
-    $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-    echo "Verbindung erfolgreich!";
+  //  $pdo = new \PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $pass);
+  //  $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+  //  echo "Verbindung erfolgreich!";
 
     $sql_file = __DIR__ . '/database.sql';
 
@@ -21,7 +31,7 @@ try {
     $sql = file_get_contents($sql_file);
 
     // Mehrere Statements sauber ausführen
-    $pdo->exec($sql);
+    \RegioMap\Config\ConfigLoad::$connection->exec($sql);
 
     echo "<b>Installation erfolgreich abgeschlossen!</b>";
 
