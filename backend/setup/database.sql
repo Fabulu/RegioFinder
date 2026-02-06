@@ -1,5 +1,4 @@
 
-DROP TABLE poi;
 CREATE TABLE poi
 (
     id          INT AUTO_INCREMENT PRIMARY KEY,
