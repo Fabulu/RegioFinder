@@ -33,7 +33,6 @@ POST http://localhost:8080/api.php          JSON body: {"poi":"Name"} inserts in
 
 Docker Compose
 Create docker-compose.yml at repo root (or in /backend, your choice) to run MySQL + PHP (and optionally infer).
-The compose file is not in the screenshot; add it next and mount backend/web as the PHP document root.
 
 Notes
 Swagger/OpenAPI lives in /backend/web (openapi.json + swagger/).
