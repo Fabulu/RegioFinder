@@ -2,13 +2,13 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "POI API",
+    "title": "Hofladen API",
     "version": "1.0.0"
   },
   "paths": {
     "/poi": {
       "get": {
-        "summary": "Liste/Filter POIs",
+        "summary": "Listet alle Hofläden",
         "description": "Gibt eine Liste von Points of Interest zurück. Optional filterbar nach Text, Kategorie oder Bounding Box.",
         "parameters": [
           {
@@ -24,20 +24,6 @@
             "description": "Kategorie-Filter (z. B. restaurant, hotel, museum).",
             "required": false,
             "schema": { "type": "string" }
-          },
-          {
-            "name": "bbox",
-            "in": "query",
-            "description": "Bounding Box als minLon,minLat,maxLon,maxLat.",
-            "required": false,
-            "schema": { "type": "string", "example": "8.20,47.02,8.40,47.10" }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "Max. Anzahl zurückgegebener Einträge.",
-            "required": false,
-            "schema": { "type": "integer", "default": 50, "minimum": 1, "maximum": 500 }
           }
         ],
         "responses": {
@@ -65,12 +51,10 @@
               "examples": {
                 "sample": {
                   "value": {
-                    "name": "Café Luzia",
+                    "betrieb": "Café Luzia",
                     "category": "cafe",
                     "location": { "lat": 47.0502, "lon": 8.3093 },
-                    "address": "Pilatusstrasse 1, 6003 Luzern",
-                    "tags": ["breakfast", "wifi"]
-                  }
+                                     }
                 }
               }
             }
@@ -78,7 +62,7 @@
         },
         "responses": {
           "201": {
-            "description": "POI erfolgreich erstellt.",
+            "description": "Hofladen erfolgreich erstellt.",
             "headers": {
               "Location": {
                 "description": "Ressourcen‑URL des neu erstellten POI.",
