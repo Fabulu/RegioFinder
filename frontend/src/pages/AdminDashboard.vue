@@ -8,295 +8,335 @@
       @toggleTheme="theme = theme === 'light' ? 'dark' : 'light'"
     />
 
-    <SortimentSection
-      :sortiment="sortiment"
-      v-model:showAdvanced="showAdvanced"
-      v-model:baseOpen="baseOpen"
-      :formatDate="formatDate"
-      :isExpired="isExpired"
-      @addItem="addSortimentItem"
-      @removeItem="removeSortimentItem"
-    />
-
-    <!-- QUICK ACTIONS -->
-    <!-- FIX: remove hero class; this is just a normal card now -->
-    <section class="card">
-      <div class="heroTop">
-        <h2>Heute posten</h2>
-        <p class="hint">
-          Wähle ein Produkt aus dem Sortiment <strong>oder</strong> schreibe freien Text.
-          Freitext wird beim Post automatisch ins Sortiment übernommen.
-        </p>
-      </div>
-
-      <div class="formGrid">
-        <label class="field">
-          <span class="label">Beitrag-Typ</span>
-          <select v-model="post.kind">
-            <option value="availability">Heute verfügbar</option>
-            <option value="new">Neu im Sortiment</option>
-            <option value="promo">Aktion / Hinweis</option>
-          </select>
-        </label>
-
-        <label class="field">
-          <span class="label">Produkt (optional)</span>
-          <select v-model="post.productId">
-            <option value="">Keins (Freitext)</option>
-            <option v-for="item in sortiment" :key="item.id" :value="item.id">
-              {{ item.name }}
-              <template v-if="item.expiresOn"> (bis {{ formatDate(item.expiresOn) }})</template>
-            </option>
-          </select>
-
-          <span class="hint" v-if="post.productId && selectedProduct?.expiresOn && isExpired(selectedProduct.expiresOn)">
-            ⚠ Dieses Produkt ist saisonal abgelaufen – trotzdem posten?
-          </span>
-        </label>
-
-        <label class="field wide">
-          <span class="label">Text *</span>
-          <input
-            v-model="post.text"
-            type="text"
-            placeholder="z.B. Heute: Raclette, Joghurt, Eier"
-            :disabled="!!post.productId"
-          />
-          <span class="hint" v-if="post.productId">
-            Text ist deaktiviert, weil ein Produkt ausgewählt ist.
-          </span>
-        </label>
-
-        <label class="field">
-          <span class="label">Preis (optional)</span>
-          <input v-model="post.price" type="text" placeholder="z.B. CHF 9.50" />
-        </label>
-
-        <label class="field">
-          <span class="label">Gültig bis (optional)</span>
-          <input v-model="post.until" type="datetime-local" />
-        </label>
-
-        <!-- PHOTO DROPZONE -->
-        <div class="field wide">
-          <span class="label">Foto(s)</span>
-
-          <div
-            class="dropzone"
-            :class="{ dragging: isDragging }"
-            @click="triggerPostFilePicker"
-            @dragenter.prevent="onDragEnter"
-            @dragover.prevent="onDragOver"
-            @dragleave.prevent="onDragLeave"
-            @drop.prevent="onDrop"
-            role="button"
-            tabindex="0"
-          >
-            <div class="dzInner">
-              <div class="dzTitle">+ Foto hinzufügen</div>
-              <div class="dzSub">Klicken oder Bild(er) hierher ziehen</div>
-            </div>
-
-            <div class="dzPreview" v-if="postPreviewUrls.length">
-              <img v-for="(u, idx) in postPreviewUrls" :key="idx" :src="u" alt="" />
-            </div>
-          </div>
-
-          <input
-            ref="postFileInput"
-            class="hiddenFile"
-            type="file"
-            accept="image/*"
-            multiple
-            @change="onPostFilesSelected"
-          />
-        </div>
-      </div>
-
-      <div class="row">
-        <button class="btn primary" type="button" @click="publishPostMock">
-          Beitrag veröffentlichen
-        </button>
-        <span class="error" v-if="postError">{{ postError }}</span>
-      </div>
-    </section>
-
-    <PostsFeed
-      :posts="posts"
-      :kindLabel="kindLabel"
-      :formatWhen="formatWhen"
-      :formatUntil="formatUntil"
-      @remove="removePost"
-    />
-
-    <!-- VACATION -->
-    <section class="card">
+    <!-- VIEW TABS -->
+    <section class="card" style="margin-top: 12px;">
       <div class="splitHead">
         <div>
-          <h2>Ferien</h2>
-          <p class="hint">
-            Schnell schalten: für 2 Wochen zu? Hier eintragen – dann wird’s überall sichtbar.
-          </p>
-        </div>
-        <label class="toggleBig">
-          <input type="checkbox" v-model="form.vacation.enabled" />
-          <span><strong>Aktiv</strong></span>
-        </label>
-      </div>
-
-      <div class="formGrid" :class="{ disabled: !form.vacation.enabled }">
-        <label class="field">
-          <span class="label">Von</span>
-          <input v-model="form.vacation.from" type="date" :disabled="!form.vacation.enabled" />
-        </label>
-
-        <label class="field">
-          <span class="label">Bis</span>
-          <input v-model="form.vacation.to" type="date" :disabled="!form.vacation.enabled" />
-        </label>
-
-        <label class="field wide">
-          <span class="label">Notiz (optional)</span>
-          <input
-            v-model="form.vacation.note"
-            type="text"
-            placeholder="z.B. Ab 03.03. wieder offen"
-            :disabled="!form.vacation.enabled"
-          />
-        </label>
-      </div>
-
-      <div class="row">
-        <button class="btn primary" type="button" @click="saveMock">
-          Ferien speichern
-        </button>
-      </div>
-    </section>
-
-    <!-- OPENING HOURS -->
-    <section class="card">
-      <details>
-        <summary class="summary">
-          <span>Öffnungszeiten</span>
-          <span class="muted">– aufklappen</span>
-        </summary>
-
-        <p class="hint" style="margin-top: 10px;">
-          Pro Tag Zeiten setzen oder “Geschlossen”.
-        </p>
-
-        <div class="hours">
-          <div class="hoursRow" v-for="d in days" :key="d.key">
-            <div class="day">{{ d.label }}</div>
-
-            <label class="toggle">
-              <input type="checkbox" v-model="form.hours[d.key].closed" />
-              <span>Geschlossen</span>
-            </label>
-
-            <div class="timeInputs" :class="{ disabled: form.hours[d.key].closed }">
-              <input v-model="form.hours[d.key].from" type="time" :disabled="form.hours[d.key].closed" />
-              <span class="sep">–</span>
-              <input v-model="form.hours[d.key].to" type="time" :disabled="form.hours[d.key].closed" />
-            </div>
-          </div>
+          <h2>Ansicht</h2>
+          <p class="hint">Wechsle zwischen Betriebs- und Kundenansicht.</p>
         </div>
 
-        <div class="row">
-          <button class="btn primary" type="button" @click="saveMock">
-            Öffnungszeiten speichern
+        <div class="tabRow">
+          <button
+            class="btn"
+            type="button"
+            :class="{ activeTab: tab === 'shop' }"
+            @click="tab = 'shop'"
+          >
+            Betrieb
+          </button>
+
+          <button
+            class="btn"
+            type="button"
+            :class="{ activeTab: tab === 'customer' }"
+            @click="tab = 'customer'"
+          >
+            Kunde
           </button>
         </div>
-      </details>
+      </div>
     </section>
 
-    <!-- PROFILE -->
-    <section class="card">
-      <details>
-        <summary class="summary">
-          <span>Profil / Standort</span>
-          <span class="muted">– aufklappen</span>
-        </summary>
+    <!-- SHOP VIEW (your existing stuff, unchanged) -->
+    <template v-if="tab === 'shop'">
+      <SortimentSection
+        :sortiment="sortiment"
+        v-model:showAdvanced="showAdvanced"
+        v-model:baseOpen="baseOpen"
+        :formatDate="formatDate"
+        :isExpired="isExpired"
+        @addItem="addSortimentItem"
+        @removeItem="removeSortimentItem"
+      />
 
-        <div class="mapWrap">
-          <div class="mapHead">
-            <h3 class="subhead">Karte</h3>
-            <p class="hint">
-              Pin per Klick setzen. Für echte Adress→Koordinaten später Geokoding im Backend.
-            </p>
-          </div>
-
-          <div ref="mapEl" class="map"></div>
-
-          <div class="row">
-            <button class="btn" type="button" @click="getLocation">
-              Aktuellen Standort übernehmen
-            </button>
-            <button class="btn" type="button" @click="pinFromAddressMock">
-              Pin aus Adresse setzen (Mock)
-            </button>
-          </div>
+      <!-- QUICK ACTIONS -->
+      <!-- FIX: remove hero class; this is just a normal card now -->
+      <section class="card">
+        <div class="heroTop">
+          <h2>Heute posten</h2>
+          <p class="hint">
+            Wähle ein Produkt aus dem Sortiment <strong>oder</strong> schreibe freien Text.
+            Freitext wird beim Post automatisch ins Sortiment übernommen.
+          </p>
         </div>
 
-        <div class="formGrid" style="margin-top: 14px;">
+        <div class="formGrid">
           <label class="field">
-            <span class="label">Name des Betriebs *</span>
-            <input v-model="form.name" type="text" placeholder="z.B. Hofladen Müller" />
-          </label>
-
-          <label class="field">
-            <span class="label">Betriebstyp *</span>
-            <select v-model="form.type">
-              <option value="">Bitte wählen…</option>
-              <option>Hofladen</option>
-              <option>Direktvermarkter</option>
-              <option>Metzgerei</option>
-              <option>Bäckerei</option>
-              <option>Chäslädeli</option>
-              <option>Dorfladen</option>
-              <option>Regiomarkt</option>
-              <option>Manufaktur</option>
+            <span class="label">Beitrag-Typ</span>
+            <select v-model="post.kind">
+              <option value="availability">Heute verfügbar</option>
+              <option value="new">Neu im Sortiment</option>
+              <option value="promo">Aktion / Hinweis</option>
             </select>
           </label>
 
+          <label class="field">
+            <span class="label">Produkt (optional)</span>
+            <select v-model="post.productId">
+              <option value="">Keins (Freitext)</option>
+              <option v-for="item in sortiment" :key="item.id" :value="item.id">
+                {{ item.name }}
+                <template v-if="item.expiresOn"> (bis {{ formatDate(item.expiresOn) }})</template>
+              </option>
+            </select>
+
+            <span class="hint" v-if="post.productId && selectedProduct?.expiresOn && isExpired(selectedProduct.expiresOn)">
+              ⚠ Dieses Produkt ist saisonal abgelaufen – trotzdem posten?
+            </span>
+          </label>
+
           <label class="field wide">
-            <span class="label">Adresse *</span>
-            <input v-model="form.address" type="text" placeholder="Strasse, PLZ, Ort" />
+            <span class="label">Text *</span>
+            <input
+              v-model="post.text"
+              type="text"
+              placeholder="z.B. Heute: Raclette, Joghurt, Eier"
+              :disabled="!!post.productId"
+            />
+            <span class="hint" v-if="post.productId">
+              Text ist deaktiviert, weil ein Produkt ausgewählt ist.
+            </span>
           </label>
 
           <label class="field">
-            <span class="label">Telefon (optional)</span>
-            <input v-model="form.phone" type="tel" placeholder="+41 79 123 45 67" />
+            <span class="label">Preis (optional)</span>
+            <input v-model="post.price" type="text" placeholder="z.B. CHF 9.50" />
           </label>
 
           <label class="field">
-            <span class="label">Website / Instagram (optional)</span>
-            <input v-model="form.link" type="url" placeholder="https://…" />
+            <span class="label">Gültig bis (optional)</span>
+            <input v-model="post.until" type="datetime-local" />
+          </label>
+
+          <!-- PHOTO DROPZONE -->
+          <div class="field wide">
+            <span class="label">Foto(s)</span>
+
+            <div
+              class="dropzone"
+              :class="{ dragging: isDragging }"
+              @click="triggerPostFilePicker"
+              @dragenter.prevent="onDragEnter"
+              @dragover.prevent="onDragOver"
+              @dragleave.prevent="onDragLeave"
+              @drop.prevent="onDrop"
+              role="button"
+              tabindex="0"
+            >
+              <div class="dzInner">
+                <div class="dzTitle">+ Foto hinzufügen</div>
+                <div class="dzSub">Klicken oder Bild(er) hierher ziehen</div>
+              </div>
+
+              <div class="dzPreview" v-if="postPreviewUrls.length">
+                <img v-for="(u, idx) in postPreviewUrls" :key="idx" :src="u" alt="" />
+              </div>
+            </div>
+
+            <input
+              ref="postFileInput"
+              class="hiddenFile"
+              type="file"
+              accept="image/*"
+              multiple
+              @change="onPostFilesSelected"
+            />
+          </div>
+        </div>
+
+        <div class="row">
+          <button class="btn primary" type="button" @click="publishPostMock">
+            Beitrag veröffentlichen
+          </button>
+          <span class="error" v-if="postError">{{ postError }}</span>
+        </div>
+      </section>
+
+      <PostsFeed
+        :posts="posts"
+        :kindLabel="kindLabel"
+        :formatWhen="formatWhen"
+        :formatUntil="formatUntil"
+        @remove="removePost"
+      />
+
+      <!-- VACATION -->
+      <section class="card">
+        <div class="splitHead">
+          <div>
+            <h2>Ferien</h2>
+            <p class="hint">
+              Schnell schalten: für 2 Wochen zu? Hier eintragen – dann wird’s überall sichtbar.
+            </p>
+          </div>
+          <label class="toggleBig">
+            <input type="checkbox" v-model="form.vacation.enabled" />
+            <span><strong>Aktiv</strong></span>
+          </label>
+        </div>
+
+        <div class="formGrid" :class="{ disabled: !form.vacation.enabled }">
+          <label class="field">
+            <span class="label">Von</span>
+            <input v-model="form.vacation.from" type="date" :disabled="!form.vacation.enabled" />
           </label>
 
           <label class="field">
-            <span class="label">Breitengrad (optional)</span>
-            <input v-model="form.lat" type="number" step="0.000001" placeholder="47.123456" />
+            <span class="label">Bis</span>
+            <input v-model="form.vacation.to" type="date" :disabled="!form.vacation.enabled" />
           </label>
 
-          <label class="field">
-            <span class="label">Längengrad (optional)</span>
-            <input v-model="form.lon" type="number" step="0.000001" placeholder="8.123456" />
+          <label class="field wide">
+            <span class="label">Notiz (optional)</span>
+            <input
+              v-model="form.vacation.note"
+              type="text"
+              placeholder="z.B. Ab 03.03. wieder offen"
+              :disabled="!form.vacation.enabled"
+            />
           </label>
         </div>
 
         <div class="row">
           <button class="btn primary" type="button" @click="saveMock">
-            Profil speichern
+            Ferien speichern
           </button>
         </div>
-      </details>
-    </section>
+      </section>
 
-    <JsonPreview :value="pretty" />
+      <!-- OPENING HOURS -->
+      <section class="card">
+        <details>
+          <summary class="summary">
+            <span>Öffnungszeiten</span>
+            <span class="muted">– aufklappen</span>
+          </summary>
+
+          <p class="hint" style="margin-top: 10px;">
+            Pro Tag Zeiten setzen oder “Geschlossen”.
+          </p>
+
+          <div class="hours">
+            <div class="hoursRow" v-for="d in days" :key="d.key">
+              <div class="day">{{ d.label }}</div>
+
+              <label class="toggle">
+                <input type="checkbox" v-model="form.hours[d.key].closed" />
+                <span>Geschlossen</span>
+              </label>
+
+              <div class="timeInputs" :class="{ disabled: form.hours[d.key].closed }">
+                <input v-model="form.hours[d.key].from" type="time" :disabled="form.hours[d.key].closed" />
+                <span class="sep">–</span>
+                <input v-model="form.hours[d.key].to" type="time" :disabled="form.hours[d.key].closed" />
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <button class="btn primary" type="button" @click="saveMock">
+              Öffnungszeiten speichern
+            </button>
+          </div>
+        </details>
+      </section>
+
+      <!-- PROFILE -->
+      <section class="card">
+        <details>
+          <summary class="summary">
+            <span>Profil / Standort</span>
+            <span class="muted">– aufklappen</span>
+          </summary>
+
+          <div class="mapWrap">
+            <div class="mapHead">
+              <h3 class="subhead">Karte</h3>
+              <p class="hint">
+                Pin per Klick setzen. Für echte Adress→Koordinaten später Geokoding im Backend.
+              </p>
+            </div>
+
+            <div ref="mapEl" class="map"></div>
+
+            <div class="row">
+              <button class="btn" type="button" @click="getLocation">
+                Aktuellen Standort übernehmen
+              </button>
+              <button class="btn" type="button" @click="pinFromAddressMock">
+                Pin aus Adresse setzen (Mock)
+              </button>
+            </div>
+          </div>
+
+          <div class="formGrid" style="margin-top: 14px;">
+            <label class="field">
+              <span class="label">Name des Betriebs *</span>
+              <input v-model="form.name" type="text" placeholder="z.B. Hofladen Müller" />
+            </label>
+
+            <label class="field">
+              <span class="label">Betriebstyp *</span>
+              <select v-model="form.type">
+                <option value="">Bitte wählen…</option>
+                <option>Hofladen</option>
+                <option>Direktvermarkter</option>
+                <option>Metzgerei</option>
+                <option>Bäckerei</option>
+                <option>Chäslädeli</option>
+                <option>Dorfladen</option>
+                <option>Regiomarkt</option>
+                <option>Manufaktur</option>
+              </select>
+            </label>
+
+            <label class="field wide">
+              <span class="label">Adresse *</span>
+              <input v-model="form.address" type="text" placeholder="Strasse, PLZ, Ort" />
+            </label>
+
+            <label class="field">
+              <span class="label">Telefon (optional)</span>
+              <input v-model="form.phone" type="tel" placeholder="+41 79 123 45 67" />
+            </label>
+
+            <label class="field">
+              <span class="label">Website / Instagram (optional)</span>
+              <input v-model="form.link" type="url" placeholder="https://…" />
+            </label>
+
+            <label class="field">
+              <span class="label">Breitengrad (optional)</span>
+              <input v-model="form.lat" type="number" step="0.000001" placeholder="47.123456" />
+            </label>
+
+            <label class="field">
+              <span class="label">Längengrad (optional)</span>
+              <input v-model="form.lon" type="number" step="0.000001" placeholder="8.123456" />
+            </label>
+          </div>
+
+          <div class="row">
+            <button class="btn primary" type="button" @click="saveMock">
+              Profil speichern
+            </button>
+          </div>
+        </details>
+      </section>
+
+      <JsonPreview :value="pretty" />
+    </template>
+
+    <!-- CUSTOMER VIEW -->
+    <template v-else>
+      <CustomerView />
+    </template>
+
     <FooterBar :displayName="account.displayName" />
   </main>
 </template>
+
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
@@ -306,9 +346,13 @@ import JsonPreview from "../components/JsonPreview.vue";
 import FooterBar from "../components/FooterBar.vue";
 import SortimentSection from "../components/SortimentSection.vue";
 import PostsFeed from "../components/PostsFeed.vue";
+import CustomerView from "./CustomerView.vue";
+
 
 const theme = ref("light");
 const showAdvanced = ref(false);
+const tab = ref("shop"); // 'shop' | 'customer'
+
 
 const account = reactive({
   displayName: "Anna Hoyer",
@@ -1188,4 +1232,17 @@ details > summary::-webkit-details-marker { display: none; }
   .addRow { grid-template-columns: 1fr; }
   .addBtn { width: 100%; }
 }
+
+.tabRow { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.activeTab {
+  border-color: #000000;
+  box-shadow: 0 0 0 4px rgba(0,0,0,0.10);
+}
+.page[data-theme="dark"] .activeTab {
+  border-color: color-mix(in srgb, var(--accent2) 70%, var(--border));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent2) 22%, transparent);
+}
+
+
 </style>
