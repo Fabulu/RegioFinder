@@ -1,10 +1,11 @@
 
-CREATE TABLE poi
+CREATE TABLE hofladen
 (
     id          INT AUTO_INCREMENT PRIMARY KEY,
-    poi     TEXT,
+    betrieb     TEXT,
     betriebstyp int,
     strasse     TEXT,
+    ort varchar(255),
     plz         varchar(10),
     web         varchar(255),
     lat         float,

@@ -1,4 +1,3 @@
-
 {
   "openapi": "3.1.0",
   "info": {
@@ -9,52 +8,40 @@
     "/api.php": {
       "get": {
         "summary": "Listet alle Hofläden",
-        "description": "Gibt eine Liste von Points of Interest zurück. Optional filterbar nach Text, Kategorie oder Bounding Box.",
+        "description": "Gibt eine Liste von Hofläden.",
         "parameters": [
-          {
-            "name": "q",
-            "in": "query",
-            "description": "Volltextsuche (z. B. Name, Adresse).",
-            "required": false,
-            "schema": { "type": "string" }
-          },
-          {
-            "name": "category",
-            "in": "query",
-            "description": "Kategorie-Filter (z. B. restaurant, hotel, museum).",
-            "required": false,
-            "schema": { "type": "string" }
-          }
         ],
         "responses": {
           "200": {
-            "description": "Liste von POIs.",
+            "description": "Liste von Hofläden",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/POI" }
-                }
               }
             }
           }
         }
       },
       "post": {
-        "summary": "Erzeuge neuen POI",
-        "description": "Legt einen neuen Point of Interest an.",
+        "summary": "Erzeuge neuer Hofläden",
+        "description": "Legt einen neuen Hofladen an.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/POICreate" },
+              "schema": {
+
+              },
               "examples": {
                 "sample": {
                   "value": {
-                    "betrieb": "Café Luzia",
-                    "category": "cafe",
-                    "location": { "lat": 47.0502, "lon": 8.3093 },
-                                     }
+                    "betrieb": "Test Hofladen",
+                    "strasse": "Teststr. 1",
+                    "plz": "1000",
+                    "ort": "Lausanne",
+                    "web": "https://hofladen.ch",
+                    "lat": 47.0502,
+                    "lon": 8.3093
+                  }
                 }
               }
             }
@@ -66,59 +53,27 @@
             "headers": {
               "Location": {
                 "description": "Ressourcen‑URL des neu erstellten POI.",
-                "schema": { "type": "string", "format": "uri" }
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
               }
             },
             "content": {
-              "application/json": { "schema": { "$ref": "#/components/schemas/POI" } }
+              "application/json": {
+                "schema": {
+
+                }
+              }
             }
           },
-          "400": { "description": "Ungültige Eingabe." }
+          "400": {
+            "description": "Ungültige Eingabe."
+          }
         }
       }
     }
   },
   "components": {
-    "schemas": {
-      "POI": {
-        "type": "object",
-        "required": ["id", "name", "category", "location"],
-        "properties": {
-          "id": { "type": "string", "format": "uuid" },
-          "name": { "type": "string" },
-          "category": { "type": "string" },
-          "location": {
-            "type": "object",
-            "required": ["lat", "lon"],
-            "properties": {
-              "lat": { "type": "number", "minimum": -90, "maximum": 90 },
-              "lon": { "type": "number", "minimum": -180, "maximum": 180 }
-            }
-          },
-          "address": { "type": "string" },
-          "tags": { "type": "array", "items": { "type": "string" } },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
-        }
-      },
-      "POICreate": {
-        "type": "object",
-        "required": ["name", "category", "location"],
-        "properties": {
-          "name": { "type": "string", "minLength": 1 },
-          "category": { "type": "string", "minLength": 1 },
-          "location": {
-            "type": "object",
-            "required": ["lat", "lon"],
-            "properties": {
-              "lat": { "type": "number", "minimum": -90, "maximum": 90 },
-              "lon": { "type": "number", "minimum": -180, "maximum": 180 }
-            }
-          },
-          "address": { "type": "string" },
-          "tags": { "type": "array", "items": { "type": "string" } }
-        }
-      }
-    }
   }
 }
