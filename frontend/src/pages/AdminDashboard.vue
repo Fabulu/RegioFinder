@@ -933,10 +933,17 @@ input::placeholder { color: rgba(0,0,0,0.45); }
   max-width: 100%;
 }
 
-.page[data-theme="light"] .btn:hover {
+/* Hover only for NON-primary buttons */
+.btn:not(.primary):hover {
   border-color: #000000;
   background: var(--card);
 }
+
+/* Primary hover stays orange, just a bit brighter */
+.btn.primary:hover {
+  filter: brightness(1.07) saturate(1.05);
+}
+
 
 .btn:active { transform: translateY(1px); }
 
