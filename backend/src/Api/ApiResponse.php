@@ -14,7 +14,13 @@ class ApiResponse
 
         (new ConfigLoad());
 
-        header("Content-Type: application/json");
+        //header("Content-Type: application/json");
+
+        //http_response_code($this->statusCode); header('Content-Length: ' . $this->filesize);
+
+        //ader('Content-Type: application/json');
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(200);
 
         header("Access-Control-Allow-Origin: *");
         header("Access-Control-Allow-Headers: Content-Type, Authorization");
@@ -42,7 +48,8 @@ class ApiResponse
                         $users[] = $row;
                     }
 
-                    echo json_encode($users);
+                    echo json_encode($users, JSON_PRETTY_PRINT);
+
                 }
                 break;
 
