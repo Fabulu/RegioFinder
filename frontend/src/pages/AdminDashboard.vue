@@ -8,8 +8,6 @@
       @toggleTheme="theme = theme === 'light' ? 'dark' : 'light'"
     />
 
-    
-
     <!-- SHOP VIEW -->
     <template v-if="tab === 'shop'">
       <SortimentSection
@@ -53,12 +51,13 @@
               type="text"
               placeholder="z.B. Heute: Raclette, Joghurt, Eier"
               :disabled="!!post.productId"
+              @keydown.enter.prevent="publishPostMock"
             />
           </label>
 
           <label class="field">
             <span class="label">Preis (optional)</span>
-            <input v-model="post.price" type="text" placeholder="z.B. CHF 9.50" />
+            <input v-model="post.price" type="text" placeholder="z.B. CHF 9.50" @keydown.enter.prevent="publishPostMock" />
           </label>
 
           <!-- PHOTO DROPZONE -->
@@ -75,6 +74,8 @@
               @drop.prevent="onDrop"
               role="button"
               tabindex="0"
+              @keydown.enter.prevent="triggerPostFilePicker"
+              @keydown.space.prevent="triggerPostFilePicker"
             >
               <div class="dzInner">
                 <div class="dzTitle">+ Foto hinzufügen</div>
@@ -142,6 +143,7 @@
               type="text"
               placeholder="z.B. Ab 03.03. wieder offen"
               :disabled="!form.vacation.enabled"
+              @keydown.enter.prevent="saveMock"
             />
           </label>
         </div>
@@ -209,12 +211,23 @@
                 Pin aus Adresse setzen (Mock)
               </button>
             </div>
+
+            <div class="row" style="margin-top: 10px;">
+              <button class="btn" type="button" @click="loadBackendShops" :disabled="backendLoading">
+                Backend: Hofläden laden
+              </button>
+              <button class="btn primary" type="button" @click="createBackendShop" :disabled="backendCreating">
+                Backend: Hofladen erstellen
+              </button>
+              <span class="hint" v-if="backendMsg">{{ backendMsg }}</span>
+              <span class="error" v-if="backendErr">{{ backendErr }}</span>
+            </div>
           </div>
 
           <div class="formGrid" style="margin-top: 14px;">
             <label class="field">
               <span class="label">Name des Betriebs *</span>
-              <input v-model="form.name" type="text" placeholder="z.B. Hofladen Müller" />
+              <input v-model="form.name" type="text" placeholder="z.B. Hofladen Müller" @keydown.enter.prevent="saveMock" />
             </label>
 
             <label class="field">
@@ -234,17 +247,17 @@
 
             <label class="field wide">
               <span class="label">Adresse *</span>
-              <input v-model="form.address" type="text" placeholder="Strasse, PLZ, Ort" />
+              <input v-model="form.address" type="text" placeholder="Strasse, PLZ, Ort" @keydown.enter.prevent="saveMock" />
             </label>
 
             <label class="field">
               <span class="label">Telefon (optional)</span>
-              <input v-model="form.phone" type="tel" placeholder="+41 79 123 45 67" />
+              <input v-model="form.phone" type="tel" placeholder="+41 79 123 45 67" @keydown.enter.prevent="saveMock" />
             </label>
 
             <label class="field">
               <span class="label">Website / Instagram (optional)</span>
-              <input v-model="form.link" type="url" placeholder="https://…" />
+              <input v-model="form.link" type="url" placeholder="https://…" @keydown.enter.prevent="saveMock" />
             </label>
 
             <label class="field">
@@ -263,12 +276,28 @@
               Profil speichern
             </button>
           </div>
+
+          <section class="card" style="margin-top: 12px;" v-if="backendShops.length">
+            <div class="splitHead">
+              <h3>Backend Hofläden</h3>
+              <span class="pill">{{ backendShops.length }} geladen</span>
+            </div>
+
+            <div class="sortimentList" style="margin-top: 10px;">
+              <div class="sortimentItem" v-for="s in backendShops" :key="s.id">
+                <div class="sortimentMain">
+                  <strong class="sortimentName">{{ s.betrieb }}</strong>
+                  <span class="muted">• {{ s.plz }} {{ s.ort }}</span>
+                  <span class="muted" v-if="s.web">• {{ s.web }}</span>
+                </div>
+              </div>
+            </div>
+          </section>
         </details>
       </section>
 
       <JsonPreview :value="pretty" />
     </template>
-    
 
     <!-- CUSTOMER VIEW -->
     <template v-else>
@@ -401,6 +430,7 @@ const pretty = computed(() =>
       profile: form,
       sortiment,
       posts: posts.value,
+      backendShops: backendShops.value,
     },
     null,
     2
@@ -491,6 +521,108 @@ async function loadDefaultAppleIntoPost() {
 const mapEl = ref(null);
 let map = null;
 let marker = null;
+
+const backendShops = ref([]);
+const backendLoading = ref(false);
+const backendCreating = ref(false);
+const backendErr = ref("");
+const backendMsg = ref("");
+
+let backendLayer = null;
+
+function clearBackendPins() {
+  try {
+    if (backendLayer && map) map.removeLayer(backendLayer);
+  } catch {}
+  backendLayer = null;
+}
+
+function renderBackendPins() {
+  if (!map || !window.L) return;
+  const L = window.L;
+
+  clearBackendPins();
+  backendLayer = L.layerGroup().addTo(map);
+
+  backendShops.value.forEach((s) => {
+    const lat = Number(s.lat);
+    const lon = Number(s.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+
+    const m = L.circleMarker([lat, lon], { radius: 7 });
+    const title = [s.betrieb, s.strasse, `${s.plz || ""} ${s.ort || ""}`].filter(Boolean).join("<br/>");
+    m.bindPopup(title);
+    m.addTo(backendLayer);
+  });
+}
+
+async function loadBackendShops() {
+  backendErr.value = "";
+  backendMsg.value = "";
+  backendLoading.value = true;
+
+  try {
+    const res = await fetch("https://regiomap.nemundo.ch/api.php");
+    if (!res.ok) throw new Error(`GET failed (${res.status})`);
+    const data = await res.json();
+
+    backendShops.value = Array.isArray(data) ? data : [];
+    backendMsg.value = `✅ ${backendShops.value.length} Hofläden geladen`;
+    renderBackendPins();
+  } catch (e) {
+    backendErr.value = `Backend laden fehlgeschlagen: ${e?.message ?? e}`;
+  } finally {
+    backendLoading.value = false;
+  }
+}
+
+async function createBackendShop() {
+  backendErr.value = "";
+  backendMsg.value = "";
+  backendCreating.value = true;
+
+  try {
+    const payload = {
+      betrieb: (form.name || "").trim(),
+      strasse: (form.address || "").trim(),
+      plz: (() => {
+        const m = (form.address || "").match(/\b(\d{4})\b/);
+        return m ? m[1] : "0000";
+      })(),
+      ort: (() => {
+        const a = (form.address || "").trim();
+        const m = a.match(/\b\d{4}\s+(.+)$/);
+        return m ? m[1].trim() : "Unbekannt";
+      })(),
+      web: (form.link || "").trim(),
+      lat: Number(form.lat) || 0,
+      lon: Number(form.lon) || 0,
+    };
+
+    if (!payload.betrieb) throw new Error("Bitte Name des Betriebs ausfüllen.");
+    if (!Number.isFinite(payload.lat) || !Number.isFinite(payload.lon) || !payload.lat || !payload.lon) {
+      throw new Error("Bitte Pin setzen (lat/lon).");
+    }
+
+    const res = await fetch("https://regiomap.nemundo.ch/api.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      throw new Error(`POST failed (${res.status}) ${txt}`.trim());
+    }
+
+    backendMsg.value = "✅ Hofladen im Backend erstellt";
+    await loadBackendShops();
+  } catch (e) {
+    backendErr.value = `Backend erstellen fehlgeschlagen: ${e?.message ?? e}`;
+  } finally {
+    backendCreating.value = false;
+  }
+}
 
 function injectLeaflet() {
   const cssId = "leaflet-css";
@@ -584,9 +716,11 @@ onMounted(async () => {
   await injectLeaflet();
   initMap();
   await loadDefaultAppleIntoPost();
+  await loadBackendShops();
 });
 
 onBeforeUnmount(() => {
+  clearBackendPins();
   try {
     if (map) map.remove();
   } catch {}
@@ -683,8 +817,8 @@ function removePost(id) {
 
 function kindLabel(k) {
   if (k === "availability") return "Heute verfügbar";
-  if (k === "new") return "Neu";
-  if (k === "promo") return "Aktion";
+  if (k === "new") return "Neu im Sortiment";
+  if (k === "promo") return "Aktion / Hinweis";
   return "Beitrag";
 }
 
@@ -709,7 +843,6 @@ function saveMock() {
 * { box-sizing: border-box; }
 img { max-width: 100%; }
 
-/* Base page: NO gradients, ever. Use theme bg. */
 .page {
   max-width: 1100px;
   margin: 0 auto;
@@ -722,7 +855,6 @@ img { max-width: 100%; }
   background: var(--bg);
 }
 
-/* JURAPARK DARK – Abend, Wald, Ruhe */
 .page[data-theme="dark"]{
   color-scheme: dark;
 
@@ -745,7 +877,6 @@ img { max-width: 100%; }
   --chip: rgba(143,179,136,0.28);
 }
 
-/* DEVIL MODE – Monochrome + Orange */
 .page[data-theme="light"]{
   color-scheme: light;
 
@@ -814,7 +945,6 @@ h3 { font-size: 18px; margin: 0; }
 .hint { color: var(--muted); font-size: 16px; margin-top: 8px; }
 .error { color: var(--danger); font-size: 14px; }
 
-/* Sortiment */
 .sortimentGrid {
   margin-top: 12px;
   display: grid;
@@ -823,7 +953,6 @@ h3 { font-size: 18px; margin: 0; }
   min-width: 0;
 }
 
-/* When base is hidden -> seasonal must span full width */
 .sortimentGrid.solo { grid-template-columns: 1fr; }
 
 .sortimentBox {
@@ -834,7 +963,6 @@ h3 { font-size: 18px; margin: 0; }
   min-width: 0;
 }
 
-/* If base is hidden, force the seasonal box to take full row */
 .sortimentBox.span2 { grid-column: 1 / -1; }
 
 .boxHead {
@@ -871,7 +999,6 @@ h3 { font-size: 18px; margin: 0; }
   background: var(--card);
 }
 
-/* Add row inline */
 .sortimentAdd { margin-top: 12px; }
 
 .addRow {
@@ -889,7 +1016,6 @@ h3 { font-size: 18px; margin: 0; }
 
 .addBtn { white-space: nowrap; }
 
-/* Form */
 .formGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -955,7 +1081,6 @@ select {
   border-radius: 12px;
 }
 
-/* link button */
 .linkBtn {
   border: 1px solid transparent;
   background: var(--card);
@@ -988,7 +1113,6 @@ select {
   color: var(--text);
 }
 
-/* Sortiment list */
 .sortimentList { margin-top: 12px; display: grid; gap: 12px; }
 
 .sortimentItem {
@@ -1008,7 +1132,6 @@ select {
 
 .sortimentActions { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
 
-/* Dropzone */
 .dropzone {
   border: 2px dashed var(--border);
   border-radius: 18px;
@@ -1044,10 +1167,8 @@ select {
 
 .hiddenFile { display: none; }
 
-/* Feed */
 .feed { display: grid; gap: 12px; margin-top: 12px; }
 
-/* Make post media sane: constrain image area, keep text layout stable */
 .post {
   border: 1px solid var(--border);
   border-radius: 18px;
@@ -1075,10 +1196,8 @@ select {
 .postText { color: var(--text); font-size: 18px; line-height: 1.35; }
 .price { font-weight: 950; color: var(--text); }
 
-/* Map */
 .map { height: 320px; border-radius: 18px; border: 1px solid var(--border); overflow: hidden; margin-top: 10px; }
 
-/* Hours */
 .hours { margin-top: 12px; display: flex; flex-direction: column; gap: 12px; }
 .hoursRow { display: grid; grid-template-columns: 72px 160px 1fr; gap: 12px; align-items: center; min-width: 0; }
 .day { font-weight: 950; color: var(--text); }
@@ -1089,7 +1208,6 @@ select {
 .timeInputs { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .sep { color: var(--muted); }
 
-/* Details summary */
 .summary {
   display: flex;
   align-items: baseline;
@@ -1103,7 +1221,6 @@ details > summary::-webkit-details-marker { display: none; }
 
 .disabled { opacity: 0.6; pointer-events: none; }
 
-/* Mobile */
 @media (max-width: 820px) {
   .page {
     font-size: 16px;
