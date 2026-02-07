@@ -56,11 +56,11 @@ class ApiResponse
             case 'GET':
                 if (isset($_GET['id'])) {
                     $id = $_GET['id'];
-                    $result = ConfigLoad::$connection->query("SELECT * FROM poi WHERE id=$id");
+                    $result = ConfigLoad::$connection->query("SELECT * FROM hofladen WHERE id=$id");
                     $data = $result->fetch_assoc();
                     echo json_encode($data);
                 } else {
-                    $result = ConfigLoad::$connection->query("SELECT * FROM poi");
+                    $result = ConfigLoad::$connection->query("SELECT * FROM hofladen");
                     $users = [];
 
 
@@ -82,14 +82,29 @@ class ApiResponse
 
             case 'POST':
 
-                print_r($input);
+                //print_r($input);
 
                 //print_r($_POST);
                 //print_r($_GET);
 
-                $name = $input['betrieb'];
+                $betrieb = $input['betrieb'];
+$strasse= $input['strasse'];
+$plz = $input['plz'];
+$ort = $input['ort'];
+$web = $input['web'];
+$lat = $input['lat'];
+$lon = $input['lon'];
 
-
+                /*
+                id          INT AUTO_INCREMENT PRIMARY KEY,
+    poi     TEXT,
+    betriebstyp int,
+    strasse     TEXT,
+    plz         varchar(10),
+    web         varchar(255),
+    lat         float,
+    lon         float
+                */
 
 
                 //$email = $input['email'];
@@ -97,19 +112,28 @@ class ApiResponse
                 //$conn->query("INSERT INTO poi (name, email, age) VALUES ('$name', '$email', $age)");
 
 
-                $stmt = ConfigLoad::$connection->prepare("INSERT INTO poi (poi) VALUES (:poi)");
-                $stmt->execute([':poi' => $name]);
+            $data=[];
+            $data[":betrieb"] = $betrieb;
+            $data[":strasse"] = $strasse;
+            $data[":plz"] = $plz;
+            $data[":ort"] = $ort;
+            $data[":web"] = $web;
+            $data[":lat"] = $lat;
+            $data[":lon"] = $lon;
 
 
-                echo json_encode(["message" => "User added successfully"]);
+                $stmt = ConfigLoad::$connection->prepare("INSERT INTO hofladen (betrieb,strasse,plz,ort,web,lat,lon) VALUES (:betrieb,:strasse,:plz,:ort,:web,:lat,:lon)");
+                $stmt->execute($data);
+
+                echo json_encode(["message" => "Hoflade added successfully"]);
                 break;
 
             case 'PUT':
                 $id = $_GET['id'];
-                $name = $input['name'];
+                $betrieb = $input['name'];
                 $email = $input['email'];
                 $age = $input['age'];
-                $conn->query("UPDATE users SET name='$name',
+                $conn->query("UPDATE users SET name='$betrieb',
                      email='$email', age=$age WHERE id=$id");
                 echo json_encode(["message" => "User updated successfully"]);
                 break;
