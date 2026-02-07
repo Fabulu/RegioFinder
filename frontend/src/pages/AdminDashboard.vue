@@ -8,57 +8,20 @@
       @toggleTheme="theme = theme === 'light' ? 'dark' : 'light'"
     />
 
-    <!-- VIEW TABS -->
-    <section class="card" style="margin-top: 12px;">
-      <div class="splitHead">
-        <div>
-          <h2>Ansicht</h2>
-          <p class="hint">Wechsle zwischen Betriebs- und Kundenansicht.</p>
-        </div>
-
-        <div class="tabRow">
-          <button
-            class="btn"
-            type="button"
-            :class="{ activeTab: tab === 'shop' }"
-            @click="tab = 'shop'"
-          >
-            Betrieb
-          </button>
-
-          <button
-            class="btn"
-            type="button"
-            :class="{ activeTab: tab === 'customer' }"
-            @click="tab = 'customer'"
-          >
-            Kunde
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- SHOP VIEW (your existing stuff, unchanged) -->
+    <!-- SHOP VIEW -->
     <template v-if="tab === 'shop'">
       <SortimentSection
         :sortiment="sortiment"
         v-model:showAdvanced="showAdvanced"
         v-model:baseOpen="baseOpen"
-        :formatDate="formatDate"
-        :isExpired="isExpired"
         @addItem="addSortimentItem"
         @removeItem="removeSortimentItem"
       />
 
       <!-- QUICK ACTIONS -->
-      <!-- FIX: remove hero class; this is just a normal card now -->
       <section class="card">
         <div class="heroTop">
           <h2>Heute posten</h2>
-          <p class="hint">
-            Wähle ein Produkt aus dem Sortiment <strong>oder</strong> schreibe freien Text.
-            Freitext wird beim Post automatisch ins Sortiment übernommen.
-          </p>
         </div>
 
         <div class="formGrid">
@@ -77,13 +40,8 @@
               <option value="">Keins (Freitext)</option>
               <option v-for="item in sortiment" :key="item.id" :value="item.id">
                 {{ item.name }}
-                <template v-if="item.expiresOn"> (bis {{ formatDate(item.expiresOn) }})</template>
               </option>
             </select>
-
-            <span class="hint" v-if="post.productId && selectedProduct?.expiresOn && isExpired(selectedProduct.expiresOn)">
-              ⚠ Dieses Produkt ist saisonal abgelaufen – trotzdem posten?
-            </span>
           </label>
 
           <label class="field wide">
@@ -93,20 +51,13 @@
               type="text"
               placeholder="z.B. Heute: Raclette, Joghurt, Eier"
               :disabled="!!post.productId"
+              @keydown.enter.prevent="publishPostMock"
             />
-            <span class="hint" v-if="post.productId">
-              Text ist deaktiviert, weil ein Produkt ausgewählt ist.
-            </span>
           </label>
 
           <label class="field">
             <span class="label">Preis (optional)</span>
-            <input v-model="post.price" type="text" placeholder="z.B. CHF 9.50" />
-          </label>
-
-          <label class="field">
-            <span class="label">Gültig bis (optional)</span>
-            <input v-model="post.until" type="datetime-local" />
+            <input v-model="post.price" type="text" placeholder="z.B. CHF 9.50" @keydown.enter.prevent="publishPostMock" />
           </label>
 
           <!-- PHOTO DROPZONE -->
@@ -123,6 +74,8 @@
               @drop.prevent="onDrop"
               role="button"
               tabindex="0"
+              @keydown.enter.prevent="triggerPostFilePicker"
+              @keydown.space.prevent="triggerPostFilePicker"
             >
               <div class="dzInner">
                 <div class="dzTitle">+ Foto hinzufügen</div>
@@ -157,7 +110,6 @@
         :posts="posts"
         :kindLabel="kindLabel"
         :formatWhen="formatWhen"
-        :formatUntil="formatUntil"
         @remove="removePost"
       />
 
@@ -166,9 +118,6 @@
         <div class="splitHead">
           <div>
             <h2>Ferien</h2>
-            <p class="hint">
-              Schnell schalten: für 2 Wochen zu? Hier eintragen – dann wird’s überall sichtbar.
-            </p>
           </div>
           <label class="toggleBig">
             <input type="checkbox" v-model="form.vacation.enabled" />
@@ -194,6 +143,7 @@
               type="text"
               placeholder="z.B. Ab 03.03. wieder offen"
               :disabled="!form.vacation.enabled"
+              @keydown.enter.prevent="saveMock"
             />
           </label>
         </div>
@@ -212,10 +162,6 @@
             <span>Öffnungszeiten</span>
             <span class="muted">– aufklappen</span>
           </summary>
-
-          <p class="hint" style="margin-top: 10px;">
-            Pro Tag Zeiten setzen oder “Geschlossen”.
-          </p>
 
           <div class="hours">
             <div class="hoursRow" v-for="d in days" :key="d.key">
@@ -253,9 +199,6 @@
           <div class="mapWrap">
             <div class="mapHead">
               <h3 class="subhead">Karte</h3>
-              <p class="hint">
-                Pin per Klick setzen. Für echte Adress→Koordinaten später Geokoding im Backend.
-              </p>
             </div>
 
             <div ref="mapEl" class="map"></div>
@@ -268,12 +211,23 @@
                 Pin aus Adresse setzen (Mock)
               </button>
             </div>
+
+            <div class="row" style="margin-top: 10px;">
+              <button class="btn" type="button" @click="loadBackendShops" :disabled="backendLoading">
+                Backend: Hofläden laden
+              </button>
+              <button class="btn primary" type="button" @click="createBackendShop" :disabled="backendCreating">
+                Backend: Hofladen erstellen
+              </button>
+              <span class="hint" v-if="backendMsg">{{ backendMsg }}</span>
+              <span class="error" v-if="backendErr">{{ backendErr }}</span>
+            </div>
           </div>
 
           <div class="formGrid" style="margin-top: 14px;">
             <label class="field">
               <span class="label">Name des Betriebs *</span>
-              <input v-model="form.name" type="text" placeholder="z.B. Hofladen Müller" />
+              <input v-model="form.name" type="text" placeholder="z.B. Hofladen Müller" @keydown.enter.prevent="saveMock" />
             </label>
 
             <label class="field">
@@ -293,17 +247,17 @@
 
             <label class="field wide">
               <span class="label">Adresse *</span>
-              <input v-model="form.address" type="text" placeholder="Strasse, PLZ, Ort" />
+              <input v-model="form.address" type="text" placeholder="Strasse, PLZ, Ort" @keydown.enter.prevent="saveMock" />
             </label>
 
             <label class="field">
               <span class="label">Telefon (optional)</span>
-              <input v-model="form.phone" type="tel" placeholder="+41 79 123 45 67" />
+              <input v-model="form.phone" type="tel" placeholder="+41 79 123 45 67" @keydown.enter.prevent="saveMock" />
             </label>
 
             <label class="field">
               <span class="label">Website / Instagram (optional)</span>
-              <input v-model="form.link" type="url" placeholder="https://…" />
+              <input v-model="form.link" type="url" placeholder="https://…" @keydown.enter.prevent="saveMock" />
             </label>
 
             <label class="field">
@@ -322,6 +276,23 @@
               Profil speichern
             </button>
           </div>
+
+          <section class="card" style="margin-top: 12px;" v-if="backendShops.length">
+            <div class="splitHead">
+              <h3>Backend Hofläden</h3>
+              <span class="pill">{{ backendShops.length }} geladen</span>
+            </div>
+
+            <div class="sortimentList" style="margin-top: 10px;">
+              <div class="sortimentItem" v-for="s in backendShops" :key="s.id">
+                <div class="sortimentMain">
+                  <strong class="sortimentName">{{ s.betrieb }}</strong>
+                  <span class="muted">• {{ s.plz }} {{ s.ort }}</span>
+                  <span class="muted" v-if="s.web">• {{ s.web }}</span>
+                </div>
+              </div>
+            </div>
+          </section>
         </details>
       </section>
 
@@ -333,10 +304,38 @@
       <CustomerView />
     </template>
 
+    <!-- VIEW TABS -->
+    <section class="card" style="margin-top: 12px;">
+      <div class="splitHead">
+        <div>
+          <h2>Ansicht</h2>
+        </div>
+
+        <div class="tabRow">
+          <button
+            class="btn"
+            type="button"
+            :class="{ activeTab: tab === 'shop' }"
+            @click="tab = 'shop'"
+          >
+            Betrieb
+          </button>
+
+          <button
+            class="btn"
+            type="button"
+            :class="{ activeTab: tab === 'customer' }"
+            @click="tab = 'customer'"
+          >
+            Kunde
+          </button>
+        </div>
+      </div>
+    </section>
+
     <FooterBar :displayName="account.displayName" />
   </main>
 </template>
-
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
@@ -348,11 +347,11 @@ import SortimentSection from "../components/SortimentSection.vue";
 import PostsFeed from "../components/PostsFeed.vue";
 import CustomerView from "./CustomerView.vue";
 
+import aepfelUrl from "../assets/aepfel.jpg";
 
 const theme = ref("light");
 const showAdvanced = ref(false);
 const tab = ref("shop"); // 'shop' | 'customer'
-
 
 const account = reactive({
   displayName: "Anna Hoyer",
@@ -398,9 +397,9 @@ const form = reactive({
 
 // Sortiment
 const sortiment = reactive([
-  { id: "p1", name: "Raclette", expiresOn: "" },
-  { id: "p2", name: "Eier", expiresOn: "" },
-  { id: "p3", name: "Erdbeeren", expiresOn: "2026-07-31" },
+  { id: "p1", name: "Raclette", isBase: false },
+  { id: "p2", name: "Eier", isBase: false },
+  { id: "p3", name: "Erdbeeren", isBase: false },
 ]);
 
 const baseOpen = ref(false);
@@ -411,7 +410,6 @@ const post = reactive({
   productId: "",
   text: "",
   price: "",
-  until: "",
   files: [],
 });
 
@@ -432,6 +430,7 @@ const pretty = computed(() =>
       profile: form,
       sortiment,
       posts: posts.value,
+      backendShops: backendShops.value,
     },
     null,
     2
@@ -442,12 +441,35 @@ function normalizeName(s) {
   return (s ?? "").trim().replace(/\s+/g, " ");
 }
 
-function addSortimentItem({ name, expiresOn }) {
-  sortiment.push({
-    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-    name,
-    expiresOn: expiresOn || "",
-  });
+function makeId() {
+  return crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+}
+
+function isDefaultAppleSelected() {
+  const f = post.files?.[0];
+  const n = (f?.name ?? "").toLowerCase();
+  return n === "aepfel.jpg" || n.includes("aepfel");
+}
+
+function ensureSortimentItem(name, { forceSeasonal = false } = {}) {
+  const clean = normalizeName(name);
+  const existing = sortiment.find((x) => x.name.toLowerCase() === clean.toLowerCase());
+  if (existing) {
+    if (forceSeasonal) existing.isBase = false;
+    return existing;
+  }
+
+  const item = {
+    id: makeId(),
+    name: clean,
+    isBase: forceSeasonal ? false : !!baseOpen.value,
+  };
+  sortiment.push(item);
+  return item;
+}
+
+function addSortimentItem({ name }) {
+  ensureSortimentItem(name, { forceSeasonal: false });
 }
 
 function removeSortimentItem(id) {
@@ -456,7 +478,6 @@ function removeSortimentItem(id) {
   if (post.productId === id) post.productId = "";
 }
 
-// When selecting a product -> disable/clear text
 watch(
   () => post.productId,
   (val) => {
@@ -487,10 +508,121 @@ function applyPostFiles(files) {
   postPreviewUrls.value = files.map((f) => URL.createObjectURL(f));
 }
 
+async function loadDefaultAppleIntoPost() {
+  try {
+    const res = await fetch(aepfelUrl);
+    const blob = await res.blob();
+    const file = new File([blob], "aepfel.jpg", { type: blob.type || "image/jpeg" });
+    applyPostFiles([file]);
+  } catch {}
+}
+
 // --- MAP (Leaflet via CDN injected at runtime) ---
 const mapEl = ref(null);
 let map = null;
 let marker = null;
+
+const backendShops = ref([]);
+const backendLoading = ref(false);
+const backendCreating = ref(false);
+const backendErr = ref("");
+const backendMsg = ref("");
+
+let backendLayer = null;
+
+function clearBackendPins() {
+  try {
+    if (backendLayer && map) map.removeLayer(backendLayer);
+  } catch {}
+  backendLayer = null;
+}
+
+function renderBackendPins() {
+  if (!map || !window.L) return;
+  const L = window.L;
+
+  clearBackendPins();
+  backendLayer = L.layerGroup().addTo(map);
+
+  backendShops.value.forEach((s) => {
+    const lat = Number(s.lat);
+    const lon = Number(s.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+
+    const m = L.circleMarker([lat, lon], { radius: 7 });
+    const title = [s.betrieb, s.strasse, `${s.plz || ""} ${s.ort || ""}`].filter(Boolean).join("<br/>");
+    m.bindPopup(title);
+    m.addTo(backendLayer);
+  });
+}
+
+async function loadBackendShops() {
+  backendErr.value = "";
+  backendMsg.value = "";
+  backendLoading.value = true;
+
+  try {
+    const res = await fetch("https://regiomap.nemundo.ch/api.php");
+    if (!res.ok) throw new Error(`GET failed (${res.status})`);
+    const data = await res.json();
+
+    backendShops.value = Array.isArray(data) ? data : [];
+    backendMsg.value = `✅ ${backendShops.value.length} Hofläden geladen`;
+    renderBackendPins();
+  } catch (e) {
+    backendErr.value = `Backend laden fehlgeschlagen: ${e?.message ?? e}`;
+  } finally {
+    backendLoading.value = false;
+  }
+}
+
+async function createBackendShop() {
+  backendErr.value = "";
+  backendMsg.value = "";
+  backendCreating.value = true;
+
+  try {
+    const payload = {
+      betrieb: (form.name || "").trim(),
+      strasse: (form.address || "").trim(),
+      plz: (() => {
+        const m = (form.address || "").match(/\b(\d{4})\b/);
+        return m ? m[1] : "0000";
+      })(),
+      ort: (() => {
+        const a = (form.address || "").trim();
+        const m = a.match(/\b\d{4}\s+(.+)$/);
+        return m ? m[1].trim() : "Unbekannt";
+      })(),
+      web: (form.link || "").trim(),
+      lat: Number(form.lat) || 0,
+      lon: Number(form.lon) || 0,
+    };
+
+    if (!payload.betrieb) throw new Error("Bitte Name des Betriebs ausfüllen.");
+    if (!Number.isFinite(payload.lat) || !Number.isFinite(payload.lon) || !payload.lat || !payload.lon) {
+      throw new Error("Bitte Pin setzen (lat/lon).");
+    }
+
+    const res = await fetch("https://regiomap.nemundo.ch/api.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      throw new Error(`POST failed (${res.status}) ${txt}`.trim());
+    }
+
+    backendMsg.value = "✅ Hofladen im Backend erstellt";
+    await loadBackendShops();
+  } catch (e) {
+    backendErr.value = `Backend erstellen fehlgeschlagen: ${e?.message ?? e}`;
+  } finally {
+    backendCreating.value = false;
+  }
+}
 
 function injectLeaflet() {
   const cssId = "leaflet-css";
@@ -583,9 +715,12 @@ function getLocation() {
 onMounted(async () => {
   await injectLeaflet();
   initMap();
+  await loadDefaultAppleIntoPost();
+  await loadBackendShops();
 });
 
 onBeforeUnmount(() => {
+  clearBackendPins();
   try {
     if (map) map.remove();
   } catch {}
@@ -593,6 +728,7 @@ onBeforeUnmount(() => {
   marker = null;
 
   postPreviewUrls.value.forEach((u) => URL.revokeObjectURL(u));
+  posts.value.forEach((p) => (p.photos || []).forEach((u) => URL.revokeObjectURL(u)));
 });
 
 watch(
@@ -627,11 +763,15 @@ function publishPostMock() {
   postError.value = "";
 
   const hasProduct = !!post.productId;
-  const text = normalizeName(post.text);
+  let text = normalizeName(post.text);
 
   if (!hasProduct && !text) {
-    postError.value = "Bitte wähle ein Produkt ODER gib einen Text ein.";
-    return;
+    if (isDefaultAppleSelected()) {
+      text = "Äpfel";
+    } else {
+      postError.value = "Bitte wähle ein Produkt ODER gib einen Text ein.";
+      return;
+    }
   }
 
   let productName = "";
@@ -639,20 +779,10 @@ function publishPostMock() {
 
   if (!hasProduct) {
     const name = text;
-    const existing = sortiment.find((x) => x.name.toLowerCase() === name.toLowerCase());
-    if (existing) {
-      productId = existing.id;
-      productName = existing.name;
-    } else {
-      const newItem = {
-        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-        name,
-        expiresOn: "",
-      };
-      sortiment.push(newItem);
-      productId = newItem.id;
-      productName = newItem.name;
-    }
+    const forceSeasonal = normalizeName(name).toLowerCase() === "äpfel" && isDefaultAppleSelected();
+    const item = ensureSortimentItem(name, { forceSeasonal });
+    productId = item.id;
+    productName = item.name;
   } else {
     productName = selectedProduct.value?.name || "";
   }
@@ -660,13 +790,12 @@ function publishPostMock() {
   const photos = post.files.map((f) => URL.createObjectURL(f));
 
   posts.value.unshift({
-    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+    id: makeId(),
     kind: post.kind,
     productId,
     productName,
     text: hasProduct ? "" : text,
     price: normalizeName(post.price),
-    until: post.until,
     photos,
     createdAt: new Date().toISOString(),
   });
@@ -674,7 +803,6 @@ function publishPostMock() {
   post.productId = "";
   post.text = "";
   post.price = "";
-  post.until = "";
   clearPostImages();
 
   isSaved.value = true;
@@ -682,13 +810,15 @@ function publishPostMock() {
 }
 
 function removePost(id) {
+  const p = posts.value.find((x) => x.id === id);
+  (p?.photos || []).forEach((u) => URL.revokeObjectURL(u));
   posts.value = posts.value.filter((p) => p.id !== id);
 }
 
 function kindLabel(k) {
   if (k === "availability") return "Heute verfügbar";
-  if (k === "new") return "Neu";
-  if (k === "promo") return "Aktion";
+  if (k === "new") return "Neu im Sortiment";
+  if (k === "promo") return "Aktion / Hinweis";
   return "Beitrag";
 }
 
@@ -699,31 +829,6 @@ function formatWhen(iso) {
   } catch {
     return iso;
   }
-}
-
-function formatUntil(val) {
-  try {
-    const d = new Date(val);
-    return d.toLocaleString("de-CH", { dateStyle: "medium", timeStyle: "short" });
-  } catch {
-    return val;
-  }
-}
-
-function formatDate(yyyyMmDd) {
-  try {
-    const d = new Date(yyyyMmDd + "T00:00:00");
-    return d.toLocaleDateString("de-CH", { dateStyle: "medium" });
-  } catch {
-    return yyyyMmDd;
-  }
-}
-
-function isExpired(yyyyMmDd) {
-  if (!yyyyMmDd) return false;
-  const today = new Date();
-  const d = new Date(yyyyMmDd + "T23:59:59");
-  return d < today;
 }
 
 function saveMock() {
@@ -738,7 +843,6 @@ function saveMock() {
 * { box-sizing: border-box; }
 img { max-width: 100%; }
 
-/* Base page: NO gradients, ever. Use theme bg. */
 .page {
   max-width: 1100px;
   margin: 0 auto;
@@ -751,7 +855,6 @@ img { max-width: 100%; }
   background: var(--bg);
 }
 
-/* JURAPARK DARK – Abend, Wald, Ruhe */
 .page[data-theme="dark"]{
   color-scheme: dark;
 
@@ -774,7 +877,6 @@ img { max-width: 100%; }
   --chip: rgba(143,179,136,0.28);
 }
 
-/* DEVIL MODE – Monochrome + Orange */
 .page[data-theme="light"]{
   color-scheme: light;
 
@@ -787,7 +889,6 @@ img { max-width: 100%; }
   --border: rgba(0, 0, 0, 0.25);
   --shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
 
-  /* Accent exists only for explicit CTA highlights */
   --accent: #C04F15;
   --accent2: #C04F15;
 
@@ -815,9 +916,6 @@ h3 { font-size: 18px; margin: 0; }
   min-width: 0;
 }
 
-/* Hero styles removed (no .hero class used anymore) */
-/* .hero { } */
-
 .splitHead {
   display: flex;
   align-items: center;
@@ -844,12 +942,9 @@ h3 { font-size: 18px; margin: 0; }
   border-radius: 999px;
 }
 
-.warnPill { background: var(--warn); }
-
 .hint { color: var(--muted); font-size: 16px; margin-top: 8px; }
 .error { color: var(--danger); font-size: 14px; }
 
-/* Sortiment */
 .sortimentGrid {
   margin-top: 12px;
   display: grid;
@@ -858,6 +953,8 @@ h3 { font-size: 18px; margin: 0; }
   min-width: 0;
 }
 
+.sortimentGrid.solo { grid-template-columns: 1fr; }
+
 .sortimentBox {
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -865,6 +962,8 @@ h3 { font-size: 18px; margin: 0; }
   background: var(--card);
   min-width: 0;
 }
+
+.sortimentBox.span2 { grid-column: 1 / -1; }
 
 .boxHead {
   display: flex;
@@ -900,7 +999,6 @@ h3 { font-size: 18px; margin: 0; }
   background: var(--card);
 }
 
-/* Add row inline */
 .sortimentAdd { margin-top: 12px; }
 
 .addRow {
@@ -918,9 +1016,6 @@ h3 { font-size: 18px; margin: 0; }
 
 .addBtn { white-space: nowrap; }
 
-.addAdvanced { margin-top: 10px; }
-
-/* Form */
 .formGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -947,22 +1042,6 @@ select {
   min-width: 0;
 }
 
-select option { background: var(--card); color: var(--text); }
-input::placeholder { color: rgba(0,0,0,0.45); }
-
-/* Focus: keep readable; black focus in light, existing behavior in dark */
-.page[data-theme="light"] input:focus,
-.page[data-theme="light"] select:focus {
-  border-color: #000000;
-  box-shadow: 0 0 0 4px rgba(0,0,0,0.10);
-}
-
-.page[data-theme="dark"] input:focus,
-.page[data-theme="dark"] select:focus {
-  border-color: color-mix(in srgb, var(--accent2) 70%, var(--border));
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent2) 22%, transparent);
-}
-
 .row { display: flex; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
 
 .btn {
@@ -977,18 +1056,6 @@ input::placeholder { color: rgba(0,0,0,0.45); }
   max-width: 100%;
 }
 
-/* Hover only for NON-primary buttons */
-.btn:not(.primary):hover {
-  border-color: #000000;
-  background: var(--card);
-}
-
-/* Primary hover stays orange, just a bit brighter */
-.btn.primary:hover {
-  filter: brightness(1.07) saturate(1.05);
-}
-
-
 .btn:active { transform: translateY(1px); }
 
 .btn.primary {
@@ -1002,8 +1069,6 @@ input::placeholder { color: rgba(0,0,0,0.45); }
     0 14px 26px rgba(0,0,0,0.20);
 }
 
-.btn.primary:hover { filter: brightness(1.05); }
-
 .btn.danger {
   border-color: rgba(192, 79, 21, 0.55);
   background: rgba(192, 79, 21, 0.12);
@@ -1016,7 +1081,6 @@ input::placeholder { color: rgba(0,0,0,0.45); }
   border-radius: 12px;
 }
 
-/* link button */
 .linkBtn {
   border: 1px solid transparent;
   background: var(--card);
@@ -1025,10 +1089,6 @@ input::placeholder { color: rgba(0,0,0,0.45); }
   font-size: 14px;
   padding: 10px 10px;
   border-radius: 12px;
-}
-.page[data-theme="light"] .linkBtn:hover {
-  border-color: #000000;
-  background: var(--card);
 }
 .tinyLink {
   font-size: 18px;
@@ -1053,7 +1113,6 @@ input::placeholder { color: rgba(0,0,0,0.45); }
   color: var(--text);
 }
 
-/* Sortiment list */
 .sortimentList { margin-top: 12px; display: grid; gap: 12px; }
 
 .sortimentItem {
@@ -1073,10 +1132,6 @@ input::placeholder { color: rgba(0,0,0,0.45); }
 
 .sortimentActions { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
 
-.miniField { display: flex; flex-direction: column; gap: 6px; }
-.miniLabel { font-size: 14px; color: var(--muted); }
-
-/* Dropzone: no accent backgrounds; keep it neutral */
 .dropzone {
   border: 2px dashed var(--border);
   border-radius: 18px;
@@ -1086,7 +1141,6 @@ input::placeholder { color: rgba(0,0,0,0.45); }
   user-select: none;
   transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
 }
-.page[data-theme="light"] .dropzone:hover { border-color: #000000; }
 .dropzone.dragging {
   border-color: #000000;
   background: rgba(0,0,0,0.04);
@@ -1113,7 +1167,6 @@ input::placeholder { color: rgba(0,0,0,0.45); }
 
 .hiddenFile { display: none; }
 
-/* Feed */
 .feed { display: grid; gap: 12px; margin-top: 12px; }
 
 .post {
@@ -1143,10 +1196,8 @@ input::placeholder { color: rgba(0,0,0,0.45); }
 .postText { color: var(--text); font-size: 18px; line-height: 1.35; }
 .price { font-weight: 950; color: var(--text); }
 
-/* Map */
 .map { height: 320px; border-radius: 18px; border: 1px solid var(--border); overflow: hidden; margin-top: 10px; }
 
-/* Hours */
 .hours { margin-top: 12px; display: flex; flex-direction: column; gap: 12px; }
 .hoursRow { display: grid; grid-template-columns: 72px 160px 1fr; gap: 12px; align-items: center; min-width: 0; }
 .day { font-weight: 950; color: var(--text); }
@@ -1157,7 +1208,6 @@ input::placeholder { color: rgba(0,0,0,0.45); }
 .timeInputs { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .sep { color: var(--muted); }
 
-/* Details summary */
 .summary {
   display: flex;
   align-items: baseline;
@@ -1171,11 +1221,6 @@ details > summary::-webkit-details-marker { display: none; }
 
 .disabled { opacity: 0.6; pointer-events: none; }
 
-/* Grid helpers */
-.sortimentGrid.solo { grid-template-columns: 1fr; }
-.sortimentBox.span2 { grid-column: 1 / -1; }
-
-/* Mobile */
 @media (max-width: 820px) {
   .page {
     font-size: 16px;
@@ -1243,6 +1288,4 @@ details > summary::-webkit-details-marker { display: none; }
   border-color: color-mix(in srgb, var(--accent2) 70%, var(--border));
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent2) 22%, transparent);
 }
-
-
 </style>
