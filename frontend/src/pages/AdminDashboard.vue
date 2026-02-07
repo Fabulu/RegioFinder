@@ -8,57 +8,22 @@
       @toggleTheme="theme = theme === 'light' ? 'dark' : 'light'"
     />
 
-    <!-- VIEW TABS -->
-    <section class="card" style="margin-top: 12px;">
-      <div class="splitHead">
-        <div>
-          <h2>Ansicht</h2>
-          <p class="hint">Wechsle zwischen Betriebs- und Kundenansicht.</p>
-        </div>
+    
 
-        <div class="tabRow">
-          <button
-            class="btn"
-            type="button"
-            :class="{ activeTab: tab === 'shop' }"
-            @click="tab = 'shop'"
-          >
-            Betrieb
-          </button>
-
-          <button
-            class="btn"
-            type="button"
-            :class="{ activeTab: tab === 'customer' }"
-            @click="tab = 'customer'"
-          >
-            Kunde
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- SHOP VIEW (your existing stuff, unchanged) -->
+    <!-- SHOP VIEW -->
     <template v-if="tab === 'shop'">
       <SortimentSection
         :sortiment="sortiment"
         v-model:showAdvanced="showAdvanced"
         v-model:baseOpen="baseOpen"
-        :formatDate="formatDate"
-        :isExpired="isExpired"
         @addItem="addSortimentItem"
         @removeItem="removeSortimentItem"
       />
 
       <!-- QUICK ACTIONS -->
-      <!-- FIX: remove hero class; this is just a normal card now -->
       <section class="card">
         <div class="heroTop">
           <h2>Heute posten</h2>
-          <p class="hint">
-            Wähle ein Produkt aus dem Sortiment <strong>oder</strong> schreibe freien Text.
-            Freitext wird beim Post automatisch ins Sortiment übernommen.
-          </p>
         </div>
 
         <div class="formGrid">
@@ -77,13 +42,8 @@
               <option value="">Keins (Freitext)</option>
               <option v-for="item in sortiment" :key="item.id" :value="item.id">
                 {{ item.name }}
-                <template v-if="item.expiresOn"> (bis {{ formatDate(item.expiresOn) }})</template>
               </option>
             </select>
-
-            <span class="hint" v-if="post.productId && selectedProduct?.expiresOn && isExpired(selectedProduct.expiresOn)">
-              ⚠ Dieses Produkt ist saisonal abgelaufen – trotzdem posten?
-            </span>
           </label>
 
           <label class="field wide">
@@ -94,19 +54,11 @@
               placeholder="z.B. Heute: Raclette, Joghurt, Eier"
               :disabled="!!post.productId"
             />
-            <span class="hint" v-if="post.productId">
-              Text ist deaktiviert, weil ein Produkt ausgewählt ist.
-            </span>
           </label>
 
           <label class="field">
             <span class="label">Preis (optional)</span>
             <input v-model="post.price" type="text" placeholder="z.B. CHF 9.50" />
-          </label>
-
-          <label class="field">
-            <span class="label">Gültig bis (optional)</span>
-            <input v-model="post.until" type="datetime-local" />
           </label>
 
           <!-- PHOTO DROPZONE -->
@@ -157,7 +109,6 @@
         :posts="posts"
         :kindLabel="kindLabel"
         :formatWhen="formatWhen"
-        :formatUntil="formatUntil"
         @remove="removePost"
       />
 
@@ -166,9 +117,6 @@
         <div class="splitHead">
           <div>
             <h2>Ferien</h2>
-            <p class="hint">
-              Schnell schalten: für 2 Wochen zu? Hier eintragen – dann wird’s überall sichtbar.
-            </p>
           </div>
           <label class="toggleBig">
             <input type="checkbox" v-model="form.vacation.enabled" />
@@ -213,10 +161,6 @@
             <span class="muted">– aufklappen</span>
           </summary>
 
-          <p class="hint" style="margin-top: 10px;">
-            Pro Tag Zeiten setzen oder “Geschlossen”.
-          </p>
-
           <div class="hours">
             <div class="hoursRow" v-for="d in days" :key="d.key">
               <div class="day">{{ d.label }}</div>
@@ -253,9 +197,6 @@
           <div class="mapWrap">
             <div class="mapHead">
               <h3 class="subhead">Karte</h3>
-              <p class="hint">
-                Pin per Klick setzen. Für echte Adress→Koordinaten später Geokoding im Backend.
-              </p>
             </div>
 
             <div ref="mapEl" class="map"></div>
@@ -327,16 +268,45 @@
 
       <JsonPreview :value="pretty" />
     </template>
+    
 
     <!-- CUSTOMER VIEW -->
     <template v-else>
       <CustomerView />
     </template>
 
+    <!-- VIEW TABS -->
+    <section class="card" style="margin-top: 12px;">
+      <div class="splitHead">
+        <div>
+          <h2>Ansicht</h2>
+        </div>
+
+        <div class="tabRow">
+          <button
+            class="btn"
+            type="button"
+            :class="{ activeTab: tab === 'shop' }"
+            @click="tab = 'shop'"
+          >
+            Betrieb
+          </button>
+
+          <button
+            class="btn"
+            type="button"
+            :class="{ activeTab: tab === 'customer' }"
+            @click="tab = 'customer'"
+          >
+            Kunde
+          </button>
+        </div>
+      </div>
+    </section>
+
     <FooterBar :displayName="account.displayName" />
   </main>
 </template>
-
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
@@ -348,11 +318,11 @@ import SortimentSection from "../components/SortimentSection.vue";
 import PostsFeed from "../components/PostsFeed.vue";
 import CustomerView from "./CustomerView.vue";
 
+import aepfelUrl from "../assets/aepfel.jpg";
 
 const theme = ref("light");
 const showAdvanced = ref(false);
 const tab = ref("shop"); // 'shop' | 'customer'
-
 
 const account = reactive({
   displayName: "Anna Hoyer",
@@ -398,9 +368,9 @@ const form = reactive({
 
 // Sortiment
 const sortiment = reactive([
-  { id: "p1", name: "Raclette", expiresOn: "" },
-  { id: "p2", name: "Eier", expiresOn: "" },
-  { id: "p3", name: "Erdbeeren", expiresOn: "2026-07-31" },
+  { id: "p1", name: "Raclette", isBase: false },
+  { id: "p2", name: "Eier", isBase: false },
+  { id: "p3", name: "Erdbeeren", isBase: false },
 ]);
 
 const baseOpen = ref(false);
@@ -411,7 +381,6 @@ const post = reactive({
   productId: "",
   text: "",
   price: "",
-  until: "",
   files: [],
 });
 
@@ -442,12 +411,35 @@ function normalizeName(s) {
   return (s ?? "").trim().replace(/\s+/g, " ");
 }
 
-function addSortimentItem({ name, expiresOn }) {
-  sortiment.push({
-    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-    name,
-    expiresOn: expiresOn || "",
-  });
+function makeId() {
+  return crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+}
+
+function isDefaultAppleSelected() {
+  const f = post.files?.[0];
+  const n = (f?.name ?? "").toLowerCase();
+  return n === "aepfel.jpg" || n.includes("aepfel");
+}
+
+function ensureSortimentItem(name, { forceSeasonal = false } = {}) {
+  const clean = normalizeName(name);
+  const existing = sortiment.find((x) => x.name.toLowerCase() === clean.toLowerCase());
+  if (existing) {
+    if (forceSeasonal) existing.isBase = false;
+    return existing;
+  }
+
+  const item = {
+    id: makeId(),
+    name: clean,
+    isBase: forceSeasonal ? false : !!baseOpen.value,
+  };
+  sortiment.push(item);
+  return item;
+}
+
+function addSortimentItem({ name }) {
+  ensureSortimentItem(name, { forceSeasonal: false });
 }
 
 function removeSortimentItem(id) {
@@ -456,7 +448,6 @@ function removeSortimentItem(id) {
   if (post.productId === id) post.productId = "";
 }
 
-// When selecting a product -> disable/clear text
 watch(
   () => post.productId,
   (val) => {
@@ -485,6 +476,15 @@ function applyPostFiles(files) {
   post.files = files;
   postPreviewUrls.value.forEach((u) => URL.revokeObjectURL(u));
   postPreviewUrls.value = files.map((f) => URL.createObjectURL(f));
+}
+
+async function loadDefaultAppleIntoPost() {
+  try {
+    const res = await fetch(aepfelUrl);
+    const blob = await res.blob();
+    const file = new File([blob], "aepfel.jpg", { type: blob.type || "image/jpeg" });
+    applyPostFiles([file]);
+  } catch {}
 }
 
 // --- MAP (Leaflet via CDN injected at runtime) ---
@@ -583,6 +583,7 @@ function getLocation() {
 onMounted(async () => {
   await injectLeaflet();
   initMap();
+  await loadDefaultAppleIntoPost();
 });
 
 onBeforeUnmount(() => {
@@ -593,6 +594,7 @@ onBeforeUnmount(() => {
   marker = null;
 
   postPreviewUrls.value.forEach((u) => URL.revokeObjectURL(u));
+  posts.value.forEach((p) => (p.photos || []).forEach((u) => URL.revokeObjectURL(u)));
 });
 
 watch(
@@ -627,11 +629,15 @@ function publishPostMock() {
   postError.value = "";
 
   const hasProduct = !!post.productId;
-  const text = normalizeName(post.text);
+  let text = normalizeName(post.text);
 
   if (!hasProduct && !text) {
-    postError.value = "Bitte wähle ein Produkt ODER gib einen Text ein.";
-    return;
+    if (isDefaultAppleSelected()) {
+      text = "Äpfel";
+    } else {
+      postError.value = "Bitte wähle ein Produkt ODER gib einen Text ein.";
+      return;
+    }
   }
 
   let productName = "";
@@ -639,20 +645,10 @@ function publishPostMock() {
 
   if (!hasProduct) {
     const name = text;
-    const existing = sortiment.find((x) => x.name.toLowerCase() === name.toLowerCase());
-    if (existing) {
-      productId = existing.id;
-      productName = existing.name;
-    } else {
-      const newItem = {
-        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-        name,
-        expiresOn: "",
-      };
-      sortiment.push(newItem);
-      productId = newItem.id;
-      productName = newItem.name;
-    }
+    const forceSeasonal = normalizeName(name).toLowerCase() === "äpfel" && isDefaultAppleSelected();
+    const item = ensureSortimentItem(name, { forceSeasonal });
+    productId = item.id;
+    productName = item.name;
   } else {
     productName = selectedProduct.value?.name || "";
   }
@@ -660,13 +656,12 @@ function publishPostMock() {
   const photos = post.files.map((f) => URL.createObjectURL(f));
 
   posts.value.unshift({
-    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+    id: makeId(),
     kind: post.kind,
     productId,
     productName,
     text: hasProduct ? "" : text,
     price: normalizeName(post.price),
-    until: post.until,
     photos,
     createdAt: new Date().toISOString(),
   });
@@ -674,7 +669,6 @@ function publishPostMock() {
   post.productId = "";
   post.text = "";
   post.price = "";
-  post.until = "";
   clearPostImages();
 
   isSaved.value = true;
@@ -682,6 +676,8 @@ function publishPostMock() {
 }
 
 function removePost(id) {
+  const p = posts.value.find((x) => x.id === id);
+  (p?.photos || []).forEach((u) => URL.revokeObjectURL(u));
   posts.value = posts.value.filter((p) => p.id !== id);
 }
 
@@ -699,31 +695,6 @@ function formatWhen(iso) {
   } catch {
     return iso;
   }
-}
-
-function formatUntil(val) {
-  try {
-    const d = new Date(val);
-    return d.toLocaleString("de-CH", { dateStyle: "medium", timeStyle: "short" });
-  } catch {
-    return val;
-  }
-}
-
-function formatDate(yyyyMmDd) {
-  try {
-    const d = new Date(yyyyMmDd + "T00:00:00");
-    return d.toLocaleDateString("de-CH", { dateStyle: "medium" });
-  } catch {
-    return yyyyMmDd;
-  }
-}
-
-function isExpired(yyyyMmDd) {
-  if (!yyyyMmDd) return false;
-  const today = new Date();
-  const d = new Date(yyyyMmDd + "T23:59:59");
-  return d < today;
 }
 
 function saveMock() {
@@ -787,7 +758,6 @@ img { max-width: 100%; }
   --border: rgba(0, 0, 0, 0.25);
   --shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
 
-  /* Accent exists only for explicit CTA highlights */
   --accent: #C04F15;
   --accent2: #C04F15;
 
@@ -815,9 +785,6 @@ h3 { font-size: 18px; margin: 0; }
   min-width: 0;
 }
 
-/* Hero styles removed (no .hero class used anymore) */
-/* .hero { } */
-
 .splitHead {
   display: flex;
   align-items: center;
@@ -844,8 +811,6 @@ h3 { font-size: 18px; margin: 0; }
   border-radius: 999px;
 }
 
-.warnPill { background: var(--warn); }
-
 .hint { color: var(--muted); font-size: 16px; margin-top: 8px; }
 .error { color: var(--danger); font-size: 14px; }
 
@@ -858,6 +823,9 @@ h3 { font-size: 18px; margin: 0; }
   min-width: 0;
 }
 
+/* When base is hidden -> seasonal must span full width */
+.sortimentGrid.solo { grid-template-columns: 1fr; }
+
 .sortimentBox {
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -865,6 +833,9 @@ h3 { font-size: 18px; margin: 0; }
   background: var(--card);
   min-width: 0;
 }
+
+/* If base is hidden, force the seasonal box to take full row */
+.sortimentBox.span2 { grid-column: 1 / -1; }
 
 .boxHead {
   display: flex;
@@ -918,8 +889,6 @@ h3 { font-size: 18px; margin: 0; }
 
 .addBtn { white-space: nowrap; }
 
-.addAdvanced { margin-top: 10px; }
-
 /* Form */
 .formGrid {
   display: grid;
@@ -947,22 +916,6 @@ select {
   min-width: 0;
 }
 
-select option { background: var(--card); color: var(--text); }
-input::placeholder { color: rgba(0,0,0,0.45); }
-
-/* Focus: keep readable; black focus in light, existing behavior in dark */
-.page[data-theme="light"] input:focus,
-.page[data-theme="light"] select:focus {
-  border-color: #000000;
-  box-shadow: 0 0 0 4px rgba(0,0,0,0.10);
-}
-
-.page[data-theme="dark"] input:focus,
-.page[data-theme="dark"] select:focus {
-  border-color: color-mix(in srgb, var(--accent2) 70%, var(--border));
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent2) 22%, transparent);
-}
-
 .row { display: flex; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
 
 .btn {
@@ -977,18 +930,6 @@ input::placeholder { color: rgba(0,0,0,0.45); }
   max-width: 100%;
 }
 
-/* Hover only for NON-primary buttons */
-.btn:not(.primary):hover {
-  border-color: #000000;
-  background: var(--card);
-}
-
-/* Primary hover stays orange, just a bit brighter */
-.btn.primary:hover {
-  filter: brightness(1.07) saturate(1.05);
-}
-
-
 .btn:active { transform: translateY(1px); }
 
 .btn.primary {
@@ -1001,8 +942,6 @@ input::placeholder { color: rgba(0,0,0,0.45); }
     0 6px 0 rgba(0,0,0,0.15),
     0 14px 26px rgba(0,0,0,0.20);
 }
-
-.btn.primary:hover { filter: brightness(1.05); }
 
 .btn.danger {
   border-color: rgba(192, 79, 21, 0.55);
@@ -1025,10 +964,6 @@ input::placeholder { color: rgba(0,0,0,0.45); }
   font-size: 14px;
   padding: 10px 10px;
   border-radius: 12px;
-}
-.page[data-theme="light"] .linkBtn:hover {
-  border-color: #000000;
-  background: var(--card);
 }
 .tinyLink {
   font-size: 18px;
@@ -1073,10 +1008,7 @@ input::placeholder { color: rgba(0,0,0,0.45); }
 
 .sortimentActions { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
 
-.miniField { display: flex; flex-direction: column; gap: 6px; }
-.miniLabel { font-size: 14px; color: var(--muted); }
-
-/* Dropzone: no accent backgrounds; keep it neutral */
+/* Dropzone */
 .dropzone {
   border: 2px dashed var(--border);
   border-radius: 18px;
@@ -1086,7 +1018,6 @@ input::placeholder { color: rgba(0,0,0,0.45); }
   user-select: none;
   transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
 }
-.page[data-theme="light"] .dropzone:hover { border-color: #000000; }
 .dropzone.dragging {
   border-color: #000000;
   background: rgba(0,0,0,0.04);
@@ -1116,6 +1047,7 @@ input::placeholder { color: rgba(0,0,0,0.45); }
 /* Feed */
 .feed { display: grid; gap: 12px; margin-top: 12px; }
 
+/* Make post media sane: constrain image area, keep text layout stable */
 .post {
   border: 1px solid var(--border);
   border-radius: 18px;
@@ -1170,10 +1102,6 @@ input::placeholder { color: rgba(0,0,0,0.45); }
 details > summary::-webkit-details-marker { display: none; }
 
 .disabled { opacity: 0.6; pointer-events: none; }
-
-/* Grid helpers */
-.sortimentGrid.solo { grid-template-columns: 1fr; }
-.sortimentBox.span2 { grid-column: 1 / -1; }
 
 /* Mobile */
 @media (max-width: 820px) {
@@ -1243,6 +1171,4 @@ details > summary::-webkit-details-marker { display: none; }
   border-color: color-mix(in srgb, var(--accent2) 70%, var(--border));
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent2) 22%, transparent);
 }
-
-
 </style>

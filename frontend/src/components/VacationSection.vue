@@ -3,9 +3,6 @@
     <div class="splitHead">
       <div>
         <h2>Ferien</h2>
-        <p class="hint">
-          Schnell schalten: für 2 Wochen zu? Hier eintragen – dann wird’s überall sichtbar.
-        </p>
       </div>
 
       <label class="toggleBig">

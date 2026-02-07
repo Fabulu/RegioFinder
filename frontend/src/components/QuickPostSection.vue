@@ -2,10 +2,7 @@
   <section class="card hero">
     <div class="heroTop">
       <h2>Heute posten</h2>
-      <p class="hint">
-        Produkt auswählen <strong>oder</strong> freien Text eingeben.
-        Freitext wird automatisch ins Sortiment übernommen.
-      </p>
+
     </div>
 
     <div class="formGrid">
@@ -35,13 +32,6 @@
             </template>
           </option>
         </select>
-
-        <span
-          class="hint warn"
-          v-if="selectedProduct?.expiresOn && isExpired(selectedProduct.expiresOn)"
-        >
-          ⚠ Produkt ist saisonal abgelaufen
-        </span>
       </label>
 
       <!-- TEXT -->
@@ -53,9 +43,6 @@
           placeholder="z.B. Heute: Erdbeeren frisch vom Feld"
           :disabled="!!local.productId"
         />
-        <span class="hint" v-if="local.productId">
-          Text deaktiviert, da ein Produkt gewählt ist.
-        </span>
       </label>
 
       <!-- PRICE -->
