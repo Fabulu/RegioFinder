@@ -2,9 +2,14 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Hofladen API",
-    "version": "1.0.0"
+    "version": "1.0"
   },
   "paths": {
+    "/category": {
+      "get": {
+        "summary": "Listet alle Kategorien"
+      }
+    },
     "/api.php": {
       "get": {
         "summary": "Listet alle Hofläden",
