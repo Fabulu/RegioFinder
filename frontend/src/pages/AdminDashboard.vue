@@ -19,7 +19,8 @@
     />
 
     <!-- QUICK ACTIONS -->
-    <section class="card hero">
+    <!-- FIX: remove hero class; this is just a normal card now -->
+    <section class="card">
       <div class="heroTop">
         <h2>Heute posten</h2>
         <p class="hint">
@@ -146,8 +147,6 @@
       <div class="formGrid" :class="{ disabled: !form.vacation.enabled }">
         <label class="field">
           <span class="label">Von</span>
-         
-
           <input v-model="form.vacation.from" type="date" :disabled="!form.vacation.enabled" />
         </label>
 
@@ -695,6 +694,7 @@ function saveMock() {
 * { box-sizing: border-box; }
 img { max-width: 100%; }
 
+/* Base page: NO gradients, ever. Use theme bg. */
 .page {
   max-width: 1100px;
   margin: 0 auto;
@@ -704,26 +704,24 @@ img { max-width: 100%; }
   font-size: 18px;
   line-height: 1.45;
   overflow-x: hidden;
-  background: radial-gradient(1100px 600px at 10% 0%, color-mix(in srgb, var(--accent) 18%, transparent), transparent),
-              radial-gradient(900px 500px at 90% 10%, color-mix(in srgb, var(--accent2) 14%, transparent), transparent);
+  background: var(--bg);
 }
-
 
 /* JURAPARK DARK – Abend, Wald, Ruhe */
 .page[data-theme="dark"]{
   color-scheme: dark;
 
-  --bg: #12110f;              /* nasser Waldboden */
-  --card: #1b1916;            /* dunkles Holz */
-  
-  --text: #f2ede7;            /* warmes Off-White */
+  --bg: #12110f;
+  --card: #1b1916;
+
+  --text: #f2ede7;
   --muted: #c5b8a6;
 
   --border: rgba(242,237,231,0.14);
   --shadow: 0 20px 48px rgba(0,0,0,0.65);
 
-  --accent: #8fb388;          /* Moosgrün */
-  --accent2: #e6a24c;         /* Abendsonne */
+  --accent: #8fb388;
+  --accent2: #e6a24c;
 
   --danger: #e26d5a;
   --warn: rgba(230,162,76,0.34);
@@ -732,57 +730,29 @@ img { max-width: 100%; }
   --chip: rgba(143,179,136,0.28);
 }
 
-
-/* JURAPARK LIGHT – Sunny, warm, popping */
+/* DEVIL MODE – Monochrome + Orange */
 .page[data-theme="light"]{
   color-scheme: light;
 
-  /* BACKGROUND – warm stone */
-  --bg: #e2cfae;              /* heller Jurakalk */
+  --bg: #ffffff;
+  --card: #ffffff;
 
-  /* CARDS – parchment / paper */
-  --card: #f3e7d3;
+  --text: #000000;
+  --muted: rgba(0, 0, 0, 0.65);
 
-  /* TEXT */
-  --text: #2b1f14;            /* dunkles Holz */
-  --muted: #6a4f33;           /* warmes Braun */
+  --border: rgba(0, 0, 0, 0.25);
+  --shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
 
-  /* LINES & DEPTH */
-  --border: rgba(43, 31, 20, 0.25);
-  --shadow: 0 16px 34px rgba(43, 31, 20, 0.28);
+  /* Accent exists only for explicit CTA highlights */
+  --accent: #C04F15;
+  --accent2: #C04F15;
 
-  /* 🌞 ACCENTS – THIS IS THE IMPORTANT PART */
-  --accent: #5c8a4f;          /* sattes Waldgrün */
-  --accent2: #f2a02c;         /* KRÄFTIGES OCKER-ORANGE (Sonne!) */
+  --danger: #C04F15;
+  --warn: rgba(192, 79, 21, 0.45);
 
-  /* STATES */
-  --danger: #b9381f;
-  --warn: rgba(242, 160, 44, 0.55);
-
-  /* UI ELEMENTS */
-  --pill: rgba(242, 160, 44, 0.45);
-  --chip: rgba(92, 138, 79, 0.38);
+  --pill: rgba(192, 79, 21, 0.20);
+  --chip: rgba(192, 79, 21, 0.14);
 }
-
-
-
-.page{
-  background:
-    radial-gradient(
-      1200px 700px at 10% 0%,
-      rgba(227,154,47,0.12),
-      transparent
-    ),
-    radial-gradient(
-      900px 600px at 90% 20%,
-      rgba(122,154,111,0.14),
-      transparent
-    ),
-    var(--bg);
-}
-
-
-
 
 h1 { font-size: 28px; line-height: 1.15; margin: 0; }
 h2 { font-size: 22px; margin: 0; }
@@ -801,14 +771,8 @@ h3 { font-size: 18px; margin: 0; }
   min-width: 0;
 }
 
-.hero {
-  border-color: color-mix(in srgb, var(--accent2) 40%, var(--border));
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--accent2) 9%, var(--card)),
-    var(--card)
-  );
-}
+/* Hero styles removed (no .hero class used anymore) */
+/* .hero { } */
 
 .splitHead {
   display: flex;
@@ -854,7 +818,7 @@ h3 { font-size: 18px; margin: 0; }
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 14px;
-  background: color-mix(in srgb, var(--bg) 22%, transparent);
+  background: var(--card);
   min-width: 0;
 }
 
@@ -889,7 +853,7 @@ h3 { font-size: 18px; margin: 0; }
   border-radius: 14px;
   border: 1px dashed var(--border);
   color: var(--muted);
-  background: color-mix(in srgb, var(--bg) 18%, transparent);
+  background: var(--card);
 }
 
 /* Add row inline */
@@ -928,8 +892,8 @@ h3 { font-size: 18px; margin: 0; }
 
 input,
 select {
-  border: 1px solid color-mix(in srgb, var(--border) 95%, transparent);
-  background: color-mix(in srgb, var(--bg) 38%, transparent);
+  border: 1px solid var(--border);
+  background: var(--card);
   color: var(--text);
   border-radius: 14px;
   padding: 14px 14px;
@@ -940,10 +904,17 @@ select {
 }
 
 select option { background: var(--card); color: var(--text); }
-input::placeholder { color: color-mix(in srgb, var(--muted) 72%, transparent); }
+input::placeholder { color: rgba(0,0,0,0.45); }
 
-input:focus,
-select:focus {
+/* Focus: keep readable; black focus in light, existing behavior in dark */
+.page[data-theme="light"] input:focus,
+.page[data-theme="light"] select:focus {
+  border-color: #000000;
+  box-shadow: 0 0 0 4px rgba(0,0,0,0.10);
+}
+
+.page[data-theme="dark"] input:focus,
+.page[data-theme="dark"] select:focus {
   border-color: color-mix(in srgb, var(--accent2) 70%, var(--border));
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent2) 22%, transparent);
 }
@@ -951,8 +922,8 @@ select:focus {
 .row { display: flex; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
 
 .btn {
-  border: 1px solid color-mix(in srgb, var(--border) 100%, transparent);
-  background: color-mix(in srgb, var(--bg) 26%, transparent);
+  border: 1px solid var(--border);
+  background: var(--card);
   color: var(--text);
   padding: 14px 16px;
   border-radius: 14px;
@@ -961,40 +932,38 @@ select:focus {
   transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
   max-width: 100%;
 }
-.btn:hover {
-  border-color: color-mix(in srgb, var(--accent2) 55%, var(--border));
-  background: color-mix(in srgb, var(--accent2) 14%, transparent);
+
+/* Hover only for NON-primary buttons */
+.btn:not(.primary):hover {
+  border-color: #000000;
+  background: var(--card);
 }
+
+/* Primary hover stays orange, just a bit brighter */
+.btn.primary:hover {
+  filter: brightness(1.07) saturate(1.05);
+}
+
+
 .btn:active { transform: translateY(1px); }
 
 .btn.primary {
   border: 1px solid rgba(0,0,0,0.15);
-
-  background: linear-gradient(
-    135deg,
-    #f7b54a 0%,     /* Sonnen-Gelb */
-    #f29a1f 45%,    /* Orange */
-    #d97706 100%    /* Tiefer Herbst */
-  );
-
-  color: #2b1f14;
+  background: #C04F15;
+  color: #ffffff;
   font-weight: 900;
   letter-spacing: 0.02em;
-
   box-shadow:
     0 6px 0 rgba(0,0,0,0.15),
-    0 14px 26px rgba(217,119,6,0.45);
+    0 14px 26px rgba(0,0,0,0.20);
 }
 
-.btn.primary:hover {
-  filter: saturate(1.15) brightness(1.05);
-}
-
+.btn.primary:hover { filter: brightness(1.05); }
 
 .btn.danger {
-  border-color: color-mix(in srgb, var(--danger) 55%, var(--border));
-  background: color-mix(in srgb, var(--danger) 14%, transparent);
-  color: color-mix(in srgb, var(--danger) 92%, var(--text));
+  border-color: rgba(192, 79, 21, 0.55);
+  background: rgba(192, 79, 21, 0.12);
+  color: var(--text);
 }
 
 .btn.tiny {
@@ -1006,16 +975,16 @@ select:focus {
 /* link button */
 .linkBtn {
   border: 1px solid transparent;
-  background: color-mix(in srgb, var(--bg) 18%, transparent);
+  background: var(--card);
   color: var(--text);
   cursor: pointer;
   font-size: 14px;
   padding: 10px 10px;
   border-radius: 12px;
 }
-.linkBtn:hover {
-  border-color: color-mix(in srgb, var(--accent2) 40%, var(--border));
-  background: color-mix(in srgb, var(--accent2) 14%, transparent);
+.page[data-theme="light"] .linkBtn:hover {
+  border-color: #000000;
+  background: var(--card);
 }
 .tinyLink {
   font-size: 18px;
@@ -1028,16 +997,16 @@ select:focus {
   height: 46px;
   border-radius: 14px;
   border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg) 26%, transparent);
+  background: var(--card);
   color: var(--text);
   cursor: pointer;
   font-size: 22px;
   line-height: 1;
 }
 .iconBtn.danger {
-  border-color: color-mix(in srgb, var(--danger) 60%, var(--border));
-  background: color-mix(in srgb, var(--danger) 14%, transparent);
-  color: color-mix(in srgb, var(--danger) 92%, var(--text));
+  border-color: rgba(192, 79, 21, 0.55);
+  background: rgba(192, 79, 21, 0.12);
+  color: var(--text);
 }
 
 /* Sortiment list */
@@ -1047,7 +1016,7 @@ select:focus {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 14px;
-  background: color-mix(in srgb, var(--bg) 18%, transparent);
+  background: var(--card);
   display: flex;
   justify-content: space-between;
   gap: 12px;
@@ -1063,20 +1032,20 @@ select:focus {
 .miniField { display: flex; flex-direction: column; gap: 6px; }
 .miniLabel { font-size: 14px; color: var(--muted); }
 
-/* Dropzone */
+/* Dropzone: no accent backgrounds; keep it neutral */
 .dropzone {
-  border: 2px dashed color-mix(in srgb, var(--accent2) 60%, var(--border));
+  border: 2px dashed var(--border);
   border-radius: 18px;
   padding: 18px;
-  background: color-mix(in srgb, var(--accent2) 10%, transparent);
+  background: var(--card);
   cursor: pointer;
   user-select: none;
   transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
 }
-.dropzone:hover { background: color-mix(in srgb, var(--accent2) 14%, transparent); }
+.page[data-theme="light"] .dropzone:hover { border-color: #000000; }
 .dropzone.dragging {
-  border-color: color-mix(in srgb, var(--accent) 70%, var(--border));
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: #000000;
+  background: rgba(0,0,0,0.04);
   transform: scale(1.01);
 }
 
@@ -1109,14 +1078,14 @@ select:focus {
   overflow: hidden;
   display: grid;
   grid-template-columns: 140px 1fr;
-  background: color-mix(in srgb, var(--bg) 18%, transparent);
+  background: var(--card);
   min-width: 0;
 }
 
 .postThumb {
   width: 140px;
   height: 140px;
-  background: color-mix(in srgb, var(--accent2) 12%, transparent);
+  background: var(--card);
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -1128,7 +1097,7 @@ select:focus {
 .postBody { padding: 14px; min-width: 0; }
 .postMeta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
 .postText { color: var(--text); font-size: 18px; line-height: 1.35; }
-.price { font-weight: 950; color: color-mix(in srgb, var(--accent) 80%, var(--text)); }
+.price { font-weight: 950; color: var(--text); }
 
 /* Map */
 .map { height: 320px; border-radius: 18px; border: 1px solid var(--border); overflow: hidden; margin-top: 10px; }
